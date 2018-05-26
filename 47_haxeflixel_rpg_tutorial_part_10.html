@@ -1,0 +1,113 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>47. HaxeFlixel RPG tutorial: Part 10</title></head><body><h1>47. HaxeFlixel RPG tutorial: Part 10</h1><h3>2014-10-18</h3><img alt="HaxeFlixel RPG tutorial enemies" src="img/96.png" class="thumb">
+<p>In this tutorial we're adding randomly wandering enemies.</p>
+<p>We're going to use the same approach for movement as we did with our character, except that all the internal logic of an enemy, including its movement, is going to be stored in a separate class, Enemy.</p>
+<p>The class extends the regular FlxSprite class, and makes use of a FlxPath object for navigation.</p>
+<p>An random time interval will also be used to make the unit stop for a little bit after wandering around, and then resume his walking.</p><p>Firstly, here's the graphic for the enemy:</p>
+<img alt="HaxeFlixel RPG tutorial enemies" src="img/98.png" class="center">
+<p>Put it in the assets/images/ folder, and save it as enemy.png.</p>
+<p>Below is the full class for Enemy.hx, which I will explain after the code.</p>
+<pre><code class="haxe">package ;
+import flixel.FlxSprite;
+import flixel.tile.FlxTilemap;
+import flixel.util.FlxPath;
+import flixel.util.FlxPoint;
+
+/**
+ * Enemy
+ * @author Kirill Poletaev
+ */
+class Enemy extends FlxSprite
+{
+	public var path:FlxPath;
+	private var wandering:Bool;
+	private var wanderTicks:Int;
+	private var nodes:Array&lt;FlxPoint&gt;;
+	private var tilemap:FlxTilemap;
+
+	public function new(tilemap:FlxTilemap) 
+	{
+		super();
+		this.tilemap = tilemap;
+		
+		loadGraphic(&quot;assets/images/enemy.png&quot;, true, PlayState.TILE_WIDTH, PlayState.TILE_HEIGHT);
+		animation.add(&quot;down&quot;, [0, 1, 0, 2]);
+		animation.add(&quot;up&quot;, [3, 4, 3, 5]);
+		animation.add(&quot;right&quot;, [6, 7, 6, 8]);
+		animation.add(&quot;left&quot;, [9, 10, 9, 11]);
+		
+		path = new FlxPath();
+		
+		animation.play(&quot;down&quot;);
+		
+		wandering = true;
+		wanderTicks = Std.int(Math.random() * 300);
+	}
+	
+	override public function update() {
+		super.update();
+		if(wandering){
+			if (wanderTicks &gt; 0) {
+				wanderTicks--;
+			} else {
+				wanderTicks = Std.int(Math.random() * 300);
+				var startPoint:FlxPoint = FlxPoint.get(x + PlayState.TILE_WIDTH / 2, y + PlayState.TILE_HEIGHT / 2);
+				while (nodes == null || nodes.length == 0) {
+					var tileCoordY:Int = Std.int(startPoint.y / PlayState.TILE_WIDTH + Math.ceil(Math.random()*6) - 3);
+					var tileCoordX:Int = Std.int(startPoint.x / PlayState.TILE_HEIGHT + Math.ceil(Math.random()*6) - 3);
+					var endPoint = FlxPoint.get(tileCoordX * PlayState.TILE_WIDTH + PlayState.TILE_WIDTH / 2, tileCoordY * PlayState.TILE_HEIGHT + PlayState.TILE_HEIGHT / 2);
+					nodes = tilemap.findPath(startPoint, endPoint);
+				}
+				path.start(this, nodes);
+			}
+		}
+		
+		if (!path.finished &amp;&amp; path.nodes != null) {
+			if (path.angle == 0 || path.angle == 45 || path.angle == -45) {
+				animation.play(&quot;up&quot;);
+			}
+			if (path.angle == 180 || path.angle == -135 || path.angle == 135) {
+				animation.play(&quot;down&quot;);
+			}
+			if (path.angle == 90) {
+				animation.play(&quot;right&quot;);
+			}
+			if (path.angle == -90) {
+				animation.play(&quot;left&quot;);
+			}
+		} else {
+			animation.curAnim.curFrame = 0;
+			animation.curAnim.stop();
+			nodes = null;
+		}	
+	}
+	
+}</code></pre>
+<p>The animations are handled in exactly the same way as we handled our hero's animations, so you'll find some similar code in the constructor and in the second half of the update() function.</p>
+<p>The constructor of this class receives a FlxTilemap object as the parameter, which is the reference to the tilemap in our PlayState. I use the wanderTicks value to manage delays between wandering, setting this value to a random integer and decreasing the value with every frame. When the ticker reaches 0, a new path is created.</p>
+<p>I use a bit of math and the Math.random() function to create a random destination point for the enemy, not too far from its starting position.</p>
+<p>You can see that I use a while loop for creating a path. This is because the enemy can find itself in a position where the randomized destination point is not walkable (next to a wall, for example), and the generated path will return a null object. For this reason I keep trying to create a new path with new random coordinates until a valid path is created.</p>
+<p>Back in PlayState.hx, there are also a few changes to be made.</p>
+<p>Firstly, at the top of the update() function, the super.update() method needs ot be called:</p>
+<pre><code class="haxe">super.update();</code></pre>
+<p>Introduce a new variable, which is an array of enemies:</p>
+<pre><code class="haxe">private var enemies:Array&lt;Enemy&gt;;</code></pre>
+<p>Instantiate it in the init() function and add a few enemies using the addEnemy() method:</p>
+<pre><code class="haxe">enemies = new Array&lt;Enemy&gt;();
+addEnemy(10, 15);
+addEnemy(12, 10);
+addEnemy(15, 6);
+addEnemy(20, 6);
+addEnemy(12, 20);
+</code></pre>
+<p>Here's the method itself:</p>
+<pre><code class="haxe">private function addEnemy(x:Int, y:Int):Void {
+	var enemy:Enemy = new Enemy(tileMap);
+	enemy.x = x * TILE_WIDTH;
+	enemy.y = y * TILE_HEIGHT;
+	enemies.push(enemy);
+	add(enemy);
+}
+</code></pre>
+<p>In the end, we'll end up with a few randomly wandering enemies:</p>
+<img alt="HaxeFlixel RPG tutorial enemies" src="img/97.gif" class="center">
+<p>But the enemies currently do not do much, other than walk around. We'll make them <a href="48_haxeflixel_rpg_tutorial_part_11.html">chase the player when he comes too close in the next tutorial</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

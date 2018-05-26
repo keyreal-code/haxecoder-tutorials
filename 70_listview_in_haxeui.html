@@ -1,0 +1,60 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>70. ListView in HaxeUI</title></head><body><h1>70. ListView in HaxeUI</h1><h3>2014-11-20</h3><img alt="HaxeUI ListView" class="thumb" src="img/143.png">
+<p>HaxeUI's ListView control is a list of selectable items, similar in appearance and name to the ListView control in Android.</p>
+<p>The list can be created and populated using an XML layout, or programmatically.</p>
+<p>Like many HaxeUI components, ListView is scrollable (with the scrollbar appearance depending on the chosen theme).</p>
+<p>Let's create a simple ListView populated by a few different items. I'm going to use an XML layout to do that, you might want to read my <a href="64_using_xml_layouts_in_haxeui.html">XML layout tutorial</a> first.</p><p>Here's the layout:</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
+&lt;listview width=&quot;150&quot; height=&quot;150&quot; id=&quot;myList&quot;&gt;
+	&lt;array&gt;
+		Apple,
+		Orange,
+		Pear,
+		Banana,
+		Grapes,
+		Pineapple,
+		Plum,
+		Peach
+	&lt;/array&gt;
+&lt;/listview&gt;</code></pre>
+<p>You can see that the items are listed in an "array" node, separated by commas.</p>
+<p>Here the layout with the ListView is added to the stage:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	root.addChild(view);
+});
+</code></pre>
+<p>We can add items to the data provider dynamically. Here's an example:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	root.addChild(view);
+	
+	var list:ListView = root.findChild(&quot;myList&quot;, ListView, true);
+	
+	list.dataSource.add({text:&quot;Horse radish&quot;});
+});
+</code></pre>
+<p>This control uses a dataSource object to render its items. You can access it to manipulate the list data.</p>
+<p>You can also listen to item selection events by adding an onChange event listener:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	root.addChild(view);
+	
+	var list:ListView = root.findChild(&quot;myList&quot;, ListView, true);
+	
+	list.dataSource.add({text:&quot;Horse radish&quot;});
+	
+	list.onChange = function(e:UIEvent) {
+		trace(list.selectedIndex);
+	}
+});
+</code></pre>
+<p>The selectedIndex property is used to get the index of the item that was just clicked.</p><footer>&copy; Kirill Poletaev</footer></body></html>

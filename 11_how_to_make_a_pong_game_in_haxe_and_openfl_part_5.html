@@ -1,0 +1,286 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>11. How to make a Pong game in Haxe and OpenFL: Part 5</title></head><body><h1>11. How to make a Pong game in Haxe and OpenFL: Part 5</h1><h3>2014-09-12</h3><img class="thumb" alt="Haxe OpenFL Pong game" src="img/27.png">
+<p>It's time to finish up our game. This time we're adding ball bounce behavior and AI movement.</p>
+<p>As a gameplay improvement we'll create a bit more complex expression for randomizing the initial angle of the ball movement. The reason is that sometimes the ball would go at a very high angle, bouncing up and down for a long time before reaching any of the edges.</p>
+<p>Let's break the expression into two parts - first let's randomize the direction (left or right), then randomize an angle in a 90 degree range, facing left or right.</p><p>Go to your setGameState() method and update the ball movement angle code:</p>
+<pre><code class="haxe">var direction:Int = (Math.random() &gt; .5)?(1):( -1);
+var randomAngle:Float = (Math.random() * Math.PI / 2) - 45;
+ballMovement.x = direction * Math.cos(randomAngle) * ballSpeed;
+ballMovement.y = Math.sin(randomAngle) * ballSpeed;
+</code></pre>
+<p>The first line determines the direction multiplier - either 1 or -1. This is done by first creating a random value from 0 to 1 using Math.random(), then checking whether the value is greater than 0.5. If it is, set the multiplier to 1, otherwise -1.</p>
+<p>The if statement is written in shortened form, the syntax is:</p>
+<pre><code class="haxe">(condition)?(true_value):(false_value);</code></pre>
+<p>Based on the same logic, let's create a bounceBall() method, which will randomize the ball's angle using the same logic. The only difference is that the direction of the ball will be opposite of its current direction. The current direction can be determined easily: if the current ball movement on the x axis is positive, that means the ball is moving right. Otherwise, the ball is moving left.</p>
+<pre><code class="haxe">private function bounceBall():Void {
+	var direction:Int = (ballMovement.x &gt; 0)?( -1):(1);
+	var randomAngle:Float = (Math.random() * Math.PI / 2) - 45;
+	ballMovement.x = direction * Math.cos(randomAngle) * ballSpeed;
+	ballMovement.y = Math.sin(randomAngle) * ballSpeed;
+}
+</code></pre>
+<p>This function will be called when the ball needs to bounce off a platform.</p>
+<p>Let's add a mechanism that checks when the ball needs to bounce. Create a new if statement inside of your ENTER_FRAME handler:</p>
+<pre><code class="haxe">if (ballMovement.x &lt; 0 &amp;&amp; ball.x &lt; 30 &amp;&amp; ball.y &gt;= platform1.y &amp;&amp; ball.y &lt;= platform1.y + 100) {
+	bounceBall();
+	ball.x = 30;
+}
+</code></pre>
+<p>We first check whether the ball's movement direction is left. Secondly, check if the ball's x coordinate is below 30 - right about where it contacts the platform. Then check if the ball's y coordinate is between the platform's top point and bottom point.</p>
+<p>When all of those conditions are true, bounce the ball and set its position to 30 *(the edge of the platform).</p>
+<p>Same logic can be applied when adding bounce functionality to the AI's platform, just change the coordinates:</p>
+<pre><code class="haxe">if (ballMovement.x &gt; 0 &amp;&amp; ball.x &gt; 470 &amp;&amp; ball.y &gt;= platform2.y &amp;&amp; ball.y &lt;= platform2.y + 100) {
+	bounceBall();
+	ball.x = 470;
+}
+</code></pre>
+<p>Now let's add AI platform movement.</p>
+<p>The logic here is simple - wait until the ball is about 2/5 of the screen's width away from the enemy platform, then move the platform vertically in the direction of the ball. The first condition is there to add fairness, or else the AI will never lose a game. This 2/5 distance will simulate AI's reaction time.</p>
+<p>Here's the code to add to the ENTER_FRAME handler:</p>
+<pre><code class="haxe">// AI platform movement
+if (ball.x &gt; 300 &amp;&amp; ball.y &gt; platform2.y + 70) {
+	platform2.y += platformSpeed;
+}
+if (ball.x &gt; 300 &amp;&amp; ball.y &lt; platform2.y + 30) {
+	platform2.y -= platformSpeed;
+}
+</code></pre>
+<p>You can see that I make the AI try to hit the ball with the middle part of his platform, again, to simulate human play.</p>
+<p>Finally, add limits on how far can AI's platform go:</p>
+<pre><code class="haxe">// AI platform limits
+if (platform2.y &lt; 5) platform2.y = 5;
+if (platform2.y &gt; 395) platform2.y = 395;
+</code></pre>
+<p>Test your game now. You should now be able to play pong against an AI opponent, who is strong, but beatable!</p>
+<img class="center" alt="Haxe OpenFL Pong game" src="img/28.png">
+<p>And here's the full Main.hx code:</p>
+<pre><code class="haxe">package ;
+
+import openfl.display.Sprite;
+import openfl.events.Event;
+import openfl.Lib;
+import openfl.events.KeyboardEvent;
+import openfl.geom.Point;
+import openfl.text.TextField;
+import openfl.text.TextFormat;
+import openfl.text.TextFormatAlign;
+
+enum GameState {
+	Paused;
+	Playing;
+}
+
+enum Player {
+	Human;
+	AI;
+}
+
+class Main extends Sprite 
+{
+	var inited:Bool;
+	
+	private var platform1:Platform;
+	private var platform2:Platform;
+	private var ball:Ball;
+	private var scorePlayer:Int;
+	private var scoreAI:Int;
+	private var scoreField:TextField;
+	private var messageField:TextField;
+	private var currentGameState:GameState;
+	private var arrowKeyUp:Bool;
+	private var arrowKeyDown:Bool;
+	private var platformSpeed:Int;
+	private var ballMovement:Point;
+	private var ballSpeed:Int;
+
+	/* ENTRY POINT */
+	
+	function resize(e) 
+	{
+		if (!inited) init();
+		// else (resize or orientation change)
+	}
+	
+	function init() 
+	{
+		if (inited) return;
+		inited = true;
+		
+		platform1 = new Platform();
+		platform1.x = 5;
+		platform1.y = 200;
+		this.addChild(platform1);
+		
+		platform2 = new Platform();
+		platform2.x = 480;
+		platform2.y = 200;
+		this.addChild(platform2);
+		
+		ball = new Ball();
+		ball.x = 250;
+		ball.y = 250;
+		this.addChild(ball);
+		
+		var scoreFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 24, 0xbbbbbb, true);
+		scoreFormat.align = TextFormatAlign.CENTER;
+		
+		scoreField = new TextField();
+		addChild(scoreField);
+		scoreField.width = 500;
+		scoreField.y = 30;
+		scoreField.defaultTextFormat = scoreFormat;
+		scoreField.selectable = false;
+		
+		var messageFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 18, 0xbbbbbb, true);
+		messageFormat.align = TextFormatAlign.CENTER;
+		
+		messageField = new TextField();
+		addChild(messageField);
+		messageField.width = 500;
+		messageField.y = 450;
+		messageField.defaultTextFormat = messageFormat;
+		messageField.selectable = false;
+		messageField.text = &quot;Press SPACE to start\nUse ARROW KEYS to move your platform&quot;;
+		
+		scorePlayer = 0;
+		scoreAI = 0;
+		arrowKeyUp = false;
+		arrowKeyDown = false;
+		platformSpeed = 7;
+		ballSpeed = 7;
+		ballMovement = new Point(0, 0);
+		setGameState(Paused);
+		
+		stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
+		stage.addEventListener(KeyboardEvent.KEY_UP, keyUp);
+		this.addEventListener(Event.ENTER_FRAME, everyFrame);
+	}
+	
+	private function setGameState(state:GameState):Void {
+		currentGameState = state;
+		updateScore();
+		if (state == Paused) {
+			messageField.alpha = 1;
+		}else {
+			messageField.alpha = 0;
+			platform1.y = 200;
+			platform2.y = 200;
+			ball.x = 250;
+			ball.y = 250;
+			var direction:Int = (Math.random() &gt; .5)?(1):( -1);
+			var randomAngle:Float = (Math.random() * Math.PI / 2) - 45;
+			ballMovement.x = direction * Math.cos(randomAngle) * ballSpeed;
+			ballMovement.y = Math.sin(randomAngle) * ballSpeed;
+		}
+	}
+	
+	private function keyDown(event:KeyboardEvent):Void {
+		if (currentGameState == Paused &amp;&amp; event.keyCode == 32) { // Space
+			setGameState(Playing);
+		}else if (event.keyCode == 38) { // Up
+			arrowKeyUp = true;
+		}else if (event.keyCode == 40) { // Down
+			arrowKeyDown = true;
+		}
+	}
+	
+	private function keyUp(event:KeyboardEvent):Void {
+		if (event.keyCode == 38) { // Up
+			arrowKeyUp = false;
+		}else if (event.keyCode == 40) { // Down
+			arrowKeyDown = false;
+		}
+	}
+	
+	private function everyFrame(event:Event):Void {
+		if (currentGameState == Playing) {
+			// player platform movement
+			if (arrowKeyUp) {
+				platform1.y -= platformSpeed;
+			}
+			if (arrowKeyDown) {
+				platform1.y += platformSpeed;
+			}
+			// AI platform movement
+			if (ball.x &gt; 300 &amp;&amp; ball.y &gt; platform2.y + 70) {
+				platform2.y += platformSpeed;
+			}
+			if (ball.x &gt; 300 &amp;&amp; ball.y &lt; platform2.y + 30) {
+				platform2.y -= platformSpeed;
+			}
+			// player platform limits
+			if (platform1.y &lt; 5) platform1.y = 5;
+			if (platform1.y &gt; 395) platform1.y = 395;
+			// AI platform limits
+			if (platform2.y &lt; 5) platform2.y = 5;
+			if (platform2.y &gt; 395) platform2.y = 395;
+			// ball movement
+			ball.x += ballMovement.x;
+			ball.y += ballMovement.y;
+			// ball platform bounce
+			if (ballMovement.x &lt; 0 &amp;&amp; ball.x &lt; 30 &amp;&amp; ball.y &gt;= platform1.y &amp;&amp; ball.y &lt;= platform1.y + 100) {
+				bounceBall();
+				ball.x = 30;
+			}
+			if (ballMovement.x &gt; 0 &amp;&amp; ball.x &gt; 470 &amp;&amp; ball.y &gt;= platform2.y &amp;&amp; ball.y &lt;= platform2.y + 100) {
+				bounceBall();
+				ball.x = 470;
+			}
+			// ball edge bounce
+			if (ball.y &lt; 5 || ball.y &gt; 495) ballMovement.y *= -1;
+			// ball goal
+			if (ball.x &lt; 5) winGame(AI);
+			if (ball.x &gt; 495) winGame(Human);
+		}
+	}
+	
+	private function bounceBall():Void {
+		var direction:Int = (ballMovement.x &gt; 0)?( -1):(1);
+		var randomAngle:Float = (Math.random() * Math.PI / 2) - 45;
+		ballMovement.x = direction * Math.cos(randomAngle) * ballSpeed;
+		ballMovement.y = Math.sin(randomAngle) * ballSpeed;
+	}
+	
+	private function winGame(player:Player):Void {
+		if (player == Human) {
+			scorePlayer++;
+		} else {
+			scoreAI++;
+		}
+		setGameState(Paused);
+	}
+	
+	private function updateScore():Void {
+		scoreField.text = scorePlayer + &quot;:&quot; + scoreAI;
+	}
+
+	/* SETUP */
+
+	public function new() 
+	{
+		super();	
+		addEventListener(Event.ADDED_TO_STAGE, added);
+	}
+
+	function added(e) 
+	{
+		removeEventListener(Event.ADDED_TO_STAGE, added);
+		stage.addEventListener(Event.RESIZE, resize);
+		#if ios
+		haxe.Timer.delay(init, 100); // iOS 6
+		#else
+		init();
+		#end
+	}
+	
+	public static function main() 
+	{
+		// static entry point
+		Lib.current.stage.align = openfl.display.StageAlign.TOP_LEFT;
+		Lib.current.stage.scaleMode = openfl.display.StageScaleMode.NO_SCALE;
+		Lib.current.addChild(new Main());
+		//
+	}
+}
+</code></pre>
+<p>We've now built a cross-platform Pong game using Haxe and OpenFL! The principles used in this tutorial series can be also used when developing larger scale games.</p>
+<p>Take a look at my other tutorials if you'd like to learn more about developing games and not only games in Haxe.</p><footer>&copy; Kirill Poletaev</footer></body></html>

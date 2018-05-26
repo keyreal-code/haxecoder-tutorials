@@ -1,0 +1,64 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>68. HaxeUI roots</title></head><body><h1>68. HaxeUI roots</h1><h3>2014-11-14</h3><img alt="HaxeUI root" class="thumb" src="img/140.png">
+<p>In this tutorial we'll take a look at root management in HaxeUI.</p>
+<p>According to the official HaxeUI wiki, a root is a "core component that HaxeUI uses for the drawing and layout of UI components".</p>
+<p>Until now, we've only been using one root in all of the examples and we created it using Toolkit's openFullscreen() method. Each root is created asynchronously and acts as a separate entity. We can create new ones using the openPopup() method and position them differently on the screen.</p>
+<p>This may come in handy when the HaxeUI interface does not need to take up the whole screen, but just a portion of it.</p><p>Using the openPopup() method we can create several roots with self-contained interfaces. The method accepts a Dynamic object as the first parameter, which lets you customize the positioning, size and styling of the root.</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openPopup( { x:20, y:20, width:130, height:130 }, function(root:Root) {
+	var divider:Divider = new Divider();
+	divider.text = &quot;Root 1&quot;;
+	root.addChild(divider);
+	
+	var button:Button = new Button();
+	button.text = &quot;Test button&quot;;
+	button.x = 10;
+	button.y = 35;
+	root.addChild(button);
+} );
+
+Toolkit.openPopup( { x:170, y:20, width:130, height:130 }, function(root:Root) {
+	var divider:Divider = new Divider();
+	divider.text = &quot;Root 2&quot;;
+	root.addChild(divider);
+	
+	var button:Button = new Button();
+	button.text = &quot;Test button&quot;;
+	button.x = 10;
+	button.y = 35;
+	root.addChild(button);
+} );
+
+Toolkit.openPopup( { x:20, y:170, width:280, height:130 }, function(root:Root) {
+	var divider:Divider = new Divider();
+	divider.text = &quot;Root 3&quot;;
+	root.addChild(divider);
+	
+	var button:Button = new Button();
+	button.text = &quot;Test button&quot;;
+	button.x = 10;
+	button.y = 35;
+	root.addChild(button);
+} );
+</code></pre>
+<img alt="HaxeUI root" class="center" src="img/141.png">
+<p>You may also find the percentWidth and percentHeight properties useful when designing UIs for resizable windows.</p>
+<p>A root can be accessed and removed through a RootManager instance.</p>
+<p>Here's an example where the RootManager's destroyRoot() method is used to close a root by clicking a button inside of it:</p>
+<pre><code class="haxe">Toolkit.openPopup( { x:20, y:320, width:100, height:100 }, function(root:Root) {
+	var divider:Divider = new Divider();
+	divider.text = &quot;Root 4&quot;;
+	root.addChild(divider);
+	
+	var button:Button = new Button();
+	button.text = &quot;Close&quot;;
+	button.x = 10;
+	button.y = 35;
+	root.addChild(button);
+	button.onClick = function (e:UIEvent) {
+		RootManager.instance.destroyRoot(root);
+	}
+} );
+</code></pre>
+<p>You can also destroy all roots using the destroyAllRoots() method of the RootManager instance.</p><footer>&copy; Kirill Poletaev</footer></body></html>

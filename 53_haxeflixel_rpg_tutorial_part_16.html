@@ -1,0 +1,48 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>53. HaxeFlixel RPG tutorial: Part 16</title></head><body><h1>53. HaxeFlixel RPG tutorial: Part 16</h1><h3>2014-10-24</h3><img src="img/111.png" alt="HaxeFlixel RPG tutorial sound" class="thumb">
+<p>Today I will show you how to utilize the HaxeFlixel's sound system to add sound effects to our RPG.</p>
+<p>I'm going to add 2 sound effects to the game - a "hit" sound to play when the player attacks during combat, and a "level up" sound which is played when the player advances to a new level.</p>
+<p>I've prepared the 2 sounds in wav format, you can <a href="img/112.zip">download them here</a>.</p>
+<p>Put the sound files to the assets/sounds/ directory of your HaxeFlixel project.</p><p>Go to CombatWindow.hx and add a new variable of the FlxSound type:</p>
+<pre><code class="haxe">private var sfx_hit:FlxSound;</code></pre>
+<p>We don't directly create a new sound for this, though, instead we'll use the FlxG class to load a cached sound for us. Add this to the bottom of the constructor:</p>
+<pre><code class="haxe">sfx_hit = FlxG.sound.load(&quot;assets/sounds/hit.wav&quot;);</code></pre>
+<p>The sound is loaded and it can be played in onAttack() using the play() method:</p>
+<pre><code class="haxe">private function onAttack() {
+	sfx_hit.play();
+	var dmg:Int = playState.hud.getLevel();
+	enemy.health -= dmg;
+	txt.text = &quot;You hit the enemy, dealing &quot; + dmg + &quot; damage.&quot;;
+	if (enemy.health &gt; 0) {
+		var enemyDmg:Int = Math.floor(Math.random()*2);
+		txt.text += &quot;\nThe enemy strikes, dealing &quot; + enemyDmg + &quot; damage.&quot;;
+		playState.hud.addHealth( -enemyDmg);
+	} else {
+		playState.winCombat(enemy);
+		playState.hud.addExp(6);
+	}
+}
+</code></pre>
+<p>And that's done! We can repeat the process in HUD.hx to add the second sound to the game.</p>
+<p>Create a new variable in HUD:</p>
+<pre><code class="haxe">private var sfx_levelup:FlxSound;</code></pre>
+<p>Instantiate it:</p>
+<pre><code class="haxe">sfx_levelup = FlxG.sound.load("assets/sounds/levelup.wav");</code></pre>
+<p>And play it when the player levels up:</p>
+<pre><code class="haxe">public function addExp(num:Int):Void {
+	exp += num;
+	while (exp &gt; maxExp) {
+		level++;
+		exp -= maxExp;
+		maxExp = Math.ceil(maxExp * 1.3);
+		hp++;
+		maxHp++;
+		sfx_levelup.play();
+	}
+}
+</code></pre>
+<p>You can use the optional Flxg.sound.load() method's properties to tweak the sound's volume, repetition and <a href="http://api.haxeflixel.com/flixel/system/frontEnds/SoundFrontEnd.html#load">other stuff</a>.</p>
+<p>In-game you can press the plus and minus keys to increase or decrease the volume.</p>
+<p>You can also customize these keys using the FlxG.sound.volumeDownKeys and FlxG.sound.volumeUpKeys properties typed Array&lt;String&gt;.</p>
+<p>Global sound volume can be manually set using FlxG.sound.volume, or can be muted using FlxG.sound.muted, and you can use FlxG.sound.muteKeys to set the keys that will toggle this state. The volume slider itself can be hidden using FlxG.sound.soundTrayEnabled.</p>
+<p>That will be all for this part.</p>
+<p>We'll <a href="54_haxeflixel_rpg_tutorial_part_17.html">add the ability to save and load the game next time</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

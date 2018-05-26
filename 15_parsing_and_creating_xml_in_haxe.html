@@ -1,0 +1,61 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>15. Parsing and creating XML in Haxe</title></head><body><h1>15. Parsing and creating XML in Haxe</h1><h3>2014-09-16</h3><img class="thumb" alt="Parsing and creating XML in Haxe" src="img/34.png">
+<p>Haxe has a built-in library for parsing and working with XML data.</p>
+<p>There are two provided APIs for working with XML in Haxe, one that works similarly to other DOM (Document Object Model) parsers, and another, which is closer to the E4X format.</p>
+<p>Both are easy to use, and choosing one over another is only a matter of preference. In this article I will show you how to use the DOM-based XML parser. For debugging purposes, you can use the trace() function to display the string representation of an XML object in the log window.</p><p>Let's start by making an XML object out of an already existing XML String. We will use the static parse() method of the Xml class:</p>
+<pre><code class="haxe">var xml:Xml = Xml.parse(&quot;&lt;root&gt;&lt;item&gt;Hello&lt;/item&gt;&lt;item&gt;World&lt;/item&gt;&lt;/root&gt;&quot;);</code></pre>
+<p>As a result we get an Xml-typed object, which we can modify using the built-in methods.</p>
+<p>Let's try creating the same structured XML from scratch using the provided methods:</p>
+<pre><code class="haxe">var xml:Xml = Xml.createElement(&quot;root&quot;);
+var item1:Xml = Xml.createElement(&quot;item&quot;);
+item1.addChild(Xml.createCData(&quot;Hello&quot;));
+xml.addChild(item1);
+var item2:Xml = Xml.createElement(&quot;item&quot;);
+item2.addChild(Xml.createPCData(&quot;World&quot;));
+xml.addChild(item2);</code></pre>
+<p>As you can see, we use the createElement() method whenever we want to create a node. We then create 2 "item" nodes using the same method, and add those to the root node. The content of the "item" children in this case is added using 2 different methods - createCData() and createPCData(). Both represent text, however, one is surrounded in CData tags, which means that all data inside of the text node is stored as-is.</p>
+<p>The resulting XML looks like this:</p>
+<pre><code class="xml">&lt;root&gt;&lt;item&gt;&lt;![CDATA[Hello]]&gt;&lt;/item&gt;&lt;item&gt;World&lt;/item&gt;&lt;/root&gt;</code></pre>
+<p>We can add comment elements too:</p>
+<pre><code class="haxe">var comment:Xml = Xml.createComment(&quot;This is a comment&quot;);
+xml.addChild(comment);</code></pre>
+<p>We can add attributes and their values using the set() method:</p>
+<pre><code class="haxe">var xml:Xml = Xml.createElement(&quot;root&quot;);
+xml.set(&quot;hello&quot;, &quot;world&quot;);</code></pre>
+<p>Which would result in:</p>
+<pre><code class="xml">&lt;root hello=&quot;world&quot;/&gt;</code></pre>
+<p>XML children can be easily looped through. There are several iterators available. For example, we can simply loop through all children of a node:</p>
+<pre><code class="haxe">for (child in xml) {
+	trace(child);
+}
+</code></pre>
+<p>The log window will print all the children:</p>
+<pre><code class="xml">&lt;item&gt;&lt;![CDATA[Hello]]&gt;&lt;/item&gt;
+&lt;item&gt;World&lt;/item&gt;
+&lt;!--This is a comment--&gt;
+</code></pre>
+<p>We can loop through elements only using the elements() method:</p>
+<pre><code class="haxe">for (child in xml.elements()) {
+	trace(child);
+}
+</code></pre>
+<p>The results are all elements. You can see that the comment block, for example, is not included:</p>
+<pre><code class="xml">&lt;item&gt;&lt;![CDATA[Hello]]&gt;&lt;/item&gt;
+&lt;item&gt;World&lt;/item&gt;
+</code></pre>
+<p>It is possible to filter nodes by their name:</p>
+<pre><code class="haxe">for (child in xml.elementsNamed(&quot;item&quot;)) {
+	trace(child);
+}
+</code></pre>
+<p>The results are all "item" nodes:</p>
+<pre><code class="xml">&lt;item&gt;&lt;![CDATA[Hello]]&gt;&lt;/item&gt;
+&lt;item&gt;World&lt;/item&gt;
+</code></pre>
+<p>Looping through attributes is also possible:</p>
+<pre><code class="haxe">for (child in xml.attributes()) {
+	trace(child + &quot; = &quot; + xml.get(child));
+}
+</code></pre>
+<p>That code would trace attributes and their values like this:</p>
+<pre><code class="xml">hello = world</code></pre>
+<p>As I said, this is only the first XML API out of 2 that are available in Haxe. The second API is called Fast, and is explained in the next tutorial.</p><footer>&copy; Kirill Poletaev</footer></body></html>

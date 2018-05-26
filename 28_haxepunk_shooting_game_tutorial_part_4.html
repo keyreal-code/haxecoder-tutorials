@@ -1,0 +1,138 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>28. HaxePunk shooting game tutorial: Part 4</title></head><body><h1>28. HaxePunk shooting game tutorial: Part 4</h1><h3>2014-09-29</h3><img src="img/62.png" alt="HaxePunk game tutorial particles emitter" class="thumb">
+<p>Today I'll show you how to add explosion particles and enemy health to our game.</p>
+<p>All particles in HaxePunk are efficiently managed using an Emitter class.</p>
+<p>Firstly we create an Entity, which serves as the container for the spawned particles, then we set its graphic to an Emitter instance. The Emitter has numerous methods for configuring and emitting different types of particles.</p>
+<p>In our case, we will emit an explosion particle every time an enemy ship collides with a bullet, and emit 3 explosion particles when an enemy ship is finally destroyed. The ship will explode completely in 5 hits.</p><p>Firstly, create an Explosion.hx class.</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Emitter;
+import com.haxepunk.utils.Ease;
+/**
+ * Explosion emitter.
+ * @author Kirill Poletaev
+ */
+class Explosion extends Entity
+{
+	private var particles:Emitter;
+
+	public function new(atlas:TextureAtlas) 
+	{
+		super();
+		particles = new Emitter(atlas.getRegion(&quot;explosion&quot;), 22, 24);
+		particles.newType(&quot;explosion&quot;, [0]);
+		particles.setMotion(&quot;explosion&quot;, 0, 10, 1, 360, 50, 1, Ease.quadOut);
+		graphic = particles;
+		layer = -1;
+	}
+	
+	public function explode(x:Float, y:Float) {
+		particles.emitInRectangle(&quot;explosion&quot;, x, y, 64, 48);
+	}
+	
+}</code></pre>
+<p>As I said, we create an Emitter and apply it to the graphic property of the container Entity. We use the explosion sprite from the atlas to represent the explosion particle.</p>
+<p>We then add a new animation type for the particle, I called it "explosion". It is not animated and only has 1 frame, so set the second parameter's value to an array of 1 element.</p>
+<p>The setMotion() method lets us define a motion for a particle animation type. It has several parameters, which let us define the angle, distance and duration of the motion. The next 3 parameters define the random value range that can be added to the initial angle, distance and duration values. We can also set an easing function.</p>
+<p>We also add an explode() method which can be called from outside the class to emit a particle at a specific location.</p>
+<p>Next, we edit the MainScene.hx class.</p>
+<pre><code class="haxe">package ;
+
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	private var spawnInterval:Int;
+	private var enemyGraphic:Image;
+	private var explosion:Explosion;
+	
+	public function new()
+	{
+		super();
+		Input.define(&quot;up&quot;, [Key.UP, Key.W]);
+		Input.define(&quot;down&quot;, [Key.DOWN, Key.S]);
+		Input.define(&quot;left&quot;, [Key.LEFT, Key.A]);
+		Input.define(&quot;right&quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&quot;atlas/atlas.xml&quot;);
+		enemyGraphic = new Image(atlas.getRegion(&quot;enemyShip&quot;));
+		
+		player = new PlayerShip(atlas);
+		add(player);
+		spawnInterval = Math.round(Math.random() * 50) + 50;
+		
+		explosion = new Explosion(atlas);
+		add(explosion);
+	}
+	
+	override public function update() {
+		super.update();
+		spawnInterval--;
+		if (spawnInterval == 0) {
+			var enemy = new EnemyShip(enemyGraphic, explosion);
+			add(enemy);
+			enemy.x = Math.round(Math.random() * (HXP.width-64));
+			enemy.y = -50;
+			spawnInterval = Math.round(Math.random() * 20)+30;
+		}
+	}
+	  
+ }</code></pre>
+<p>In the code above: introduce the public explosion variable, add it to the scene, and pass its reference to the EnemyShip class.</p>
+<p>Finally, in the EnemyShip.hx class, call the explode() method whenever a particle needs to be emitted.</p>
+<p>Also note that the ship now has to take 5 hits before exploding completely, thanks to the 'health' variable.</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.HXP;
+import com.haxepunk.graphics.Emitter;
+
+/**
+ * Enemy ship entity.
+ * @author Kirill Poletaev
+ */
+class EnemyShip extends Entity
+{
+	private var speed:Int;
+	private var health:Int;
+	private var explosion:Explosion;
+
+	public function new(g:Dynamic, explosion:Explosion) 
+	{
+		super();
+		graphic = g;
+		this.explosion = explosion;
+		speed = Math.ceil(Math.random() * 3);
+		setHitbox(64, 48, 0, 0);
+		health = 5;
+	}
+	
+	override public function update() {
+		this.y += speed;
+		if (this.y &gt; HXP.height) {
+			scene.remove(this);
+		}
+		var collidedEntity = collide(&quot;bullet&quot;, x, y);
+		if (collidedEntity != null) {
+			health--;
+			scene.remove(collidedEntity);
+			explosion.explode(x, y);
+		}
+		if (health == 0) {
+			var i:Int = 0;
+			while(i&lt;3){
+				explosion.explode(x, y);
+				i++;
+			}
+			scene.remove(this);
+		}
+	}
+	
+}</code></pre>
+<p>Now we have explosion particles emitted whenever an enemy ship is hit or destroyed!</p>
+<p>We'll <a href="29_haxepunk_shooting_game_tutorial_part_5.html">add a text field displaying score in the next tutorial</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

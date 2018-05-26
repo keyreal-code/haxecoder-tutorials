@@ -1,0 +1,54 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>06. Enum types in Haxe</title></head><body><h1>06. Enum types in Haxe</h1><h3>2014-09-07</h3><img class="thumb" alt="Enum Haxe" src="img/18.png"><p>Haxe provides enumeration types, which are used to declare data sets of fixed values. Enums are different from classes and can have multiple constructors with optional parameters.</p>
+<p>Enums can be used to represent, for example, a suit of cards - club, diamond, spade and heart. It can also be used to represent colors - red, green, blue, etc. Even a boolean can be represented as a enum, since it has 2 values - true and false.</p>
+<p>With that in mind, let's see how to declare a enum set.</p><p>Enums are declared on the same level as classes, not inside of them. The set is preceded with a "enum" keyword:</p>
+<pre><code class="haxe">enum Boolean {
+	True;
+	False;
+}
+
+enum Suit {
+	Club;
+	Diamond,
+	Spade;
+	Heart;
+}</code></pre>
+<p>The values can then be used in a switch, for example:</p>
+<pre><code class="haxe">switch(card) {
+	case Club: trace("A Club card was picked");
+	case Diamond: trace("A Diamond card was picked");
+	case Spade: trace("A Spade card was picked");
+	case Heart: trace("A Heart card was picked");
+}
+</code></pre>
+<p>As a side note - switch cases in Haxe do not need to be broken, so there is no need for a break; keyword after each case block.</p>
+<p>Enum value constructors can also be built with parameters. Here's an example:</p>
+<pre><code class="haxe">enum Colors {
+	Red;
+	Green;
+	Blue;
+	RGB(r:Int, g:Int, b:Int);
+}</code></pre>
+<p>This way we can have infinite Colors values, but 4 fixed constructors.</p>
+<p>Recursive parameter types are also supported:</p>
+<pre><code class="haxe">enum Colors {
+	Red;
+	Green;
+	Blue;
+	RGB(r:Int, g:Int, b:Int);
+	ARGB(alpha:Int, color:RGB);
+}</code></pre>
+<p>You can store enum values in EnumValue type variables:</p>
+<pre><code class="haxe">var val:EnumValue = Red;</code></pre>
+<p>You can store the enum set in Enum&lt;T&gt; variables:</p>
+<pre><code class="haxe">var val:Enum&lt;Colors&gt; = Colors;</code></pre>
+<p>If you want to return an enumerated type from a function, the type of the returned value is your enum set's type:</p>
+<pre><code class="haxe">private function getOrangeColor():Colors {
+	return RGB(0xFF, 0x66, 0x00);
+}
+</code></pre>
+<p>You can also receive enum types the same way:</p>
+<pre><code class="haxe">private function processColor(color:Colors):Void {
+	// ...
+}</code></pre>
+<p>The enum system is easy to use and powerful at the same time. It will surely be useful in the future.</p>
+<p>Move on to the next tutorial, where we will <a href="7_how_to_make_a_pong_game_in_haxe_and_openfl_part_1.html">begin creating a simple Pong game in Haxe and OpenFL</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

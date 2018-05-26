@@ -1,0 +1,85 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>35. HaxePunk shooting game tutorial: Part 11</title></head><body><h1>35. HaxePunk shooting game tutorial: Part 11</h1><h3>2014-10-06</h3><img class="thumb" alt="HaxePunk tutorial Date SharedObject" src="img/70.png">
+<p>HaxePunk provides an easy way to save data locally, which can be loaded the next time the game is launched.</p>
+<p>Today I'll show you how to use that feature to store highscore locally.</p>
+<p>Data saving is done using a built-in class Data and its static methods. This class lets you create objects with unlimited properties of any type, saving them to a locally stored file. In essence, HaxePunk's Data class utilizes OpenFL's SharedObject functionality and simply acts as a wrapper for that class.</p>
+<p>Start by going to the Score.hx class and declaring a new "highscore" variable.</p><p>Make it an integer typed variable:</p>
+<pre><code class="haxe">private var highscore:Int;</code></pre>
+<p>In the constructor we will add 3 lines which will load the previously saved highscore value and update the text on the screen.</p>
+<p>You firstly have to load a saved object. If you don't have one, a new one is created for you. You can give it any name you want, in this case I called my object "shooterData". You can access its properties using the read() method.</p>
+<p>In this case I load the "highscore" property and apply its value to the highscore variable. There's a second parameter to the read() method, which lets you specify the default value to return if there is no such property yet. Set that to 0.</p>
+<p>After that's done, call the reset() method to update the text on the screen.</p>
+<pre><code class="haxe">Data.load("shooterData");
+highscore = Data.read("highscore", 0);
+reset();
+</code></pre>
+<p>Whenever data need to be updated, use the write() method to update a value of a property. When that's done, you can apply the changes to the file using the save() method.</p>
+<pre><code class="haxe">Data.write("highscore", highscore);
+Data.save("shooterData");
+</code></pre>
+<p>Whenever a point is added in the add() method, check whether the current score is bigger than the highscore. If it is, update highscore to the current value.</p>
+<p>Don't forget to update the lines that change displayed text field's value.</p>
+<pre><code class="haxe">public function add(num:Int) {
+	points += num;
+	if (points &gt; highscore) {
+		highscore++;
+		Data.write(&quot;highscore&quot;, highscore);
+		Data.save(&quot;shooterData&quot;);
+	}
+	score.text = &quot;Score: &quot; + points + &quot;\nHi-score: &quot; + highscore;
+}
+
+public function reset() {
+	points = 0;
+	score.text = &quot;Score: &quot; + points + &quot;\nHi-score: &quot; + highscore;
+}
+</code></pre>
+<p>Full Score.hx class code looks like this:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.Text;
+import com.haxepunk.utils.Data;
+import flash.text.TextFormatAlign;
+import com.haxepunk.HXP;
+
+/**
+ * Score container and counter.
+ * @author Kirill Poletaev
+ */
+class Score extends Entity
+{
+	private var score:Text;
+	private var points:Int;
+	private var highscore:Int;
+
+	public function new() 
+	{
+		super();
+		score = new Text(&quot;&quot;, 0, 50, HXP.width);
+		score.align = TextFormatAlign.CENTER;
+		score.size = 24;
+		graphic = score;
+		layer = -2;
+		points = 0;
+		
+		Data.load(&quot;shooterData&quot;);
+		highscore = Data.read(&quot;highscore&quot;, 0);
+		reset();
+	}
+	
+	public function add(num:Int) {
+		points += num;
+		if (points &gt; highscore) {
+			highscore++;
+			Data.write(&quot;highscore&quot;, highscore);
+			Data.save(&quot;shooterData&quot;);
+		}
+		score.text = &quot;Score: &quot; + points + &quot;\nHi-score: &quot; + highscore;
+	}
+	
+	public function reset() {
+		points = 0;
+		score.text = &quot;Score: &quot; + points + &quot;\nHi-score: &quot; + highscore;
+	}
+	
+}</code></pre>
+<p>If you test your game now, you'll see that you have a new "highscore" value displayed. When that value is updated, you can reload the game and see that the value is still there, unchanged.</p><footer>&copy; Kirill Poletaev</footer></body></html>

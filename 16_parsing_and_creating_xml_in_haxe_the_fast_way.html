@@ -1,0 +1,55 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>16. Parsing and creating XML in Haxe: the Fast way</title></head><body><h1>16. Parsing and creating XML in Haxe: the Fast way</h1><h3>2014-09-17</h3><img src="img/35.png" alt="Haxe Fast XML" class="thumb">
+<p>In the previous tutorial we've looked at parsing and creating XML objects in Haxe using the built-in API which has a DOM-like access model. This time, we're looking at the second API that Haxe offers for dealing with XML data.</p>
+<p>The API we're using is called Fast (haxe.xml.Fast package) and allows for a simpler access to XML elements using dot notation. This may save development time, because the syntax is closer to the E4X standard.</p>
+<p>To begin, let's create a simple XML String and parse it into a regular XML object using the parse() method.</p><p>Here's the XML we're going to parse:</p>
+<pre><code class="xml">&lt;root myAttr = 'test'&gt;
+	&lt;catalog&gt;
+		&lt;item&gt;Hello&lt;/item&gt;
+		&lt;item&gt;World&lt;/item&gt;
+	&lt;/catalog&gt;
+&lt;/root&gt;</code></pre>
+<p>Looks like this in the code:</p>
+<pre><code class="haxe">var xml:Xml = Xml.parse(&quot;&lt;root myAttr='test'&gt;&lt;catalog&gt;&lt;item&gt;Hello&lt;/item&gt;&lt;item&gt;World&lt;/item&gt;&lt;/catalog&gt;&lt;/root&gt;&quot;);</code></pre>
+<p>To use the Fast approach, we need to use the Fast class as a wrapper for the existing XML object:</p>
+<pre><code class="haxe">var fast:Fast = new Fast(xml.firstElement());</code></pre>
+<p>We can now access the XML data using dot notation. For example, we can read the attribute of the root tag like this:</p>
+<pre><code class="haxe">trace(fast.att.myAttr);</code></pre>
+<p>This will trace the value of the "myAttr" attribute of the root tag, which is "test".</p>
+<p>We can also test whether an element has an attribute with a certain name. For example, we can test whether the root tag has the attribute "otherAttr", and print the value if it exists.</p>
+<pre><code class="haxe">if (fast.has.otherAttr) {
+	trace(fast.att.otherAttr);
+}else {
+	trace("otherAttr does not exist");
+}
+</code></pre>
+<p>We can access child nodes using their name like this:</p>
+<pre><code class="haxe">var catalog:Fast = fast.node.catalog;</code></pre>
+<p>Very simple. The resulting catalog variable is also a Fast instance.</p>
+<p>We can use the name property to get the name of the node:</p>
+<pre><code class="haxe">trace(catalog.name);</code></pre>
+<p>We can loop through all nodes of the same name using the "nodes" property and the name of the nodes we're looking for:</p>
+<pre><code class="haxe">for (item in catalog.nodes.item) {
+	trace(item.innerData);
+}
+</code></pre>
+<p>The innerData property displays the inner data as text, such as "Hello" and "World".</p>
+<p>We can use the innerHTML property of a Fast object to display the inner XML structure as a String without the parent node:</p>
+<pre><code class="haxe">trace(catalog.innerHTML);</code></pre>
+<p>This will trace the following String:</p>
+<pre><code class="xml">&lt;item&gt;Hello&lt;/item&gt;&lt;item&gt;World&lt;/item&gt;
+</code></pre>
+<p>You can retrieve an XML object out of a Fast object using the "x" property. Tracing that value will trace the same thing as innerHTML, plus the parent node:</p>
+<pre><code class="haxe">trace(catalog.x);</code></pre>
+<p>Trace results:</p>
+<pre><code class="xml">&lt;catalog&gt;&lt;item&gt;Hello&lt;/item&gt;&lt;item&gt;World&lt;/item&gt;&lt;/catalog&gt;
+</code></pre>
+<p>You can loop through all children elements of a Fast object using the "elements" property. The resulting objects are all Fast instances.</p>
+<pre><code class="haxe">for (elem in catalog.elements) {
+	trace(elem.x);
+}
+</code></pre>
+<p>The traced values:</p>
+<pre><code class="xml">&lt;item&gt;Hello&lt;/item&gt;
+&lt;item&gt;World&lt;/item&gt;</code></pre>
+<p>That's all there is to the Fast XML API in Haxe.</p>
+<p>If you found this helpful, consider taking a look at my other tutorials, as well as subscribing to the free newsletter!</p><footer>&copy; Kirill Poletaev</footer></body></html>

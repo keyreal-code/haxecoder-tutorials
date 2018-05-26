@@ -1,0 +1,42 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>03. OOP in Haxe</title></head><body><h1>03. OOP in Haxe</h1><h3>2014-09-04</h3><img alt="Haxe new class" class="thumb" src="img/15.png"><p>Haxe is a language that's similar to ECMAScript, which means that if you had previous experience with Java, AS3, C# or similar languages, you'll find the syntax of Haxe familiar.</p>
+<p>Majority of tutorials on this site follow the "learn by real life example" principle, but some general theoretical knowledge is necessary.</p>
+<p>In this article we'll take a quick look at some of the basic principles of OOP (Object Oriented Programming) in Haxe and familiarize ourselves with the syntax.</p><p>If you followed my <a href="2_getting_started_with_haxe.html">installation tutorial</a>, you may have created a Haxe/OpenFL project in Flash Develop and ended up with an empty Hello World project. If you take a closer look at the structure, you'll notice that the project consists of multiple directories, including a folder called "src".</p>
+<p>This is where all your source code files are kept. Currently there should be just one file inside, which is automatically created by Flash Develop - Main.hx. All source files in Haxe have the hx extension. These are the building blocks of your program. They are often sorted in different folders and subfolders.</p>
+<p>Each file can have multiple objects of different types. One of these types is a class.</p>
+<p>A class is not an object on its own - it's more of a template, which you can later use to create multiple object instances of. Usually, one file will contain one class, but it is also possible to include helper classes if necessary.</p>
+<p>Let's take a look at the Main.hx class and break it down to find out what each component does. We're going to focus on the syntax and not the actual functionality of this code.</p>
+<pre><code class="haxe">package ;
+</code></pre>
+<p>The file starts with a line defining a package. A package name describes the path to this file. If in your directory tree your class is located at com/haxecoder/examples/Main.hx , then the package would be:</p>
+<pre><code class="haxe">package com.haxecoder.examples;</code></pre>
+<p>After that we have a list of imported classes. In this case, we import 3 external classes (all of which are standard OpenFL classes) so that they can be used inside of this class. The <i>import</i> keyword is followed by the package name of the imported class, and the name of the class:</p>
+<pre><code class="haxe">import flash.display.Sprite;
+import flash.events.Event;
+import flash.Lib;
+</code></pre>
+<p>Right after that we declare a class. The name in this case is Main, and this class extends Sprite. This means that it will inherit all the properties of the Sprite class.</p>
+<pre><code class="haxe">class Main extends Sprite 
+{
+
+}
+</code></pre>
+<p>A Haxe file usually has just one class, called the same name as the file itself, although additional helper classes can be added. They are defined in the same way.</p>
+<p>Moving on, we have a variable declaration:</p>
+<pre><code class="haxe">var inited:Bool;
+</code></pre>
+<p>Variables in a class are prefixed with "var" keyword. The name of the variable is followed by its type - but the type system will be discussed in more detail in the next tutorial. Variables can also be prefixed with an access keyword - private, public or static.</p>
+<p><strong>private</strong> makes the variable available inside of this class only, as well as classes that extend it.</p>
+<p><strong>public</strong> makes it accessible from external classes.</p>
+<p>Normally, variable values are specific to their instances and not the whole class. For example, we can have a class called Cat with a variable "name", then create 3 instances of Cat with different names. <strong>static</strong> keyword makes this field available as a class field, as opposed to an object variable.</p>
+<p>Next, we have a method declaration:</p>
+<pre><code class="haxe">function resize(e) { }
+</code></pre>
+<p>Just like in most OOP languages, variables hold values and methods execute actions.</p>
+<p>Methods are prefixed with a function keyword. Can also be prefixed with an access keyword, just like a variable. Can accept parameters, in this case - "e". Parameters can be typed or untyped, just like variables. If we wanted to set strict parameter type for this function, we would write:</p>
+<pre><code class="haxe">function resize(e:Event) { }
+</code></pre>
+<p>Lastly, we have a constructor:</p>
+<pre><code class="haxe">public function new() { }
+</code></pre>
+<p>A constructor always has the name "new" and is declared in similar way to methods. This is the function that is called once an instance of this class is created.</p>
+<p>This article is meant to provide only a very basic and vague understanding of a class in Haxe. Move on to the <a href="4_types_and_type_inference_in_haxe.html">next tutorial for an overview of the types and type inference in Haxe</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

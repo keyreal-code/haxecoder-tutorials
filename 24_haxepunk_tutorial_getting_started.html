@@ -1,0 +1,110 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>24. HaxePunk tutorial: Getting started</title></head><body><h1>24. HaxePunk tutorial: Getting started</h1><h3>2014-09-25</h3><img src="img/49.png" alt="HaxePunk tutorial" class="thumb">
+<p>HaxePunk is one of the most popular game frameworks for Haxe and OpenFL.</p>
+<p>It's a spiritual successor to a popular AS3 framework FlashPunk. I'm not using the word "port" because it really does not feel like a port, but a library that aims to provide the same functionality, but is written from scratch, taking advantage of everything Haxe and OpenFL offers.</p>
+<p>That's a good thing, because what we end up with is a layer of optimized, non-bloated code of just the essential things that's necessary for game development.</p>
+<p>Today I'll show you how to install HaxePunk, how to make a simple HaxePunk project, and how to debug your game.</p><p>If you haven't installed Haxe and OpenFL yet, do so <a href="2_getting_started_with_haxe.html">by following this tutorial</a>.</p>
+<p>Similarly to most popular Haxe libraries, HaxePunk can be installed using haxelib. Simply run the following commands:</p>
+<pre><code class="haxe">haxelib install HaxePunk
+haxelib run HaxePunk setup</code></pre>
+<p>HaxePunk is installed, we can start using it right away.</p>
+<p>There are two ways to create a HaxePunk project.</p>
+<p>The first one is by using the command line:</p>
+<pre><code class="haxe">haxelib run HaxePunk new HaxePunk_Project</code></pre>
+<p>This will create a new folder HaxePunk_Project in the current directory with all the initial files and sub-directories.</p>
+<p>A more convenient way is to use a FlashDevelop template, which can be found <a href="https://github.com/HaxePunk/FlashDevelop/raw/master/HXPTemplate.fdz" target="_blank">on the official github page.</a> To install the template, simply drag the file to your open FlashDevelop window.</p>
+<p>You can then create a new HaxePunk project using the Project/New Project menu.</p>
+<p>The generated HaxePunk project's structure looks like a simplified OpenFL project - we have the project.xml file for configuration, initial Main.hx class, the assets folder and so on. There is also an additional haxe file called MainScene.hx.</p>
+<p>If you look at the Main.hx class code, you'll see that the MainScene class is instantiated during initialization and applied to the scene property of the HXP class:</p>
+<pre><code class="haxe">import com.haxepunk.Engine;
+import com.haxepunk.HXP;
+
+class Main extends Engine
+{
+
+	override public function init()
+	{
+#if debug
+		HXP.console.enable();
+#end
+		HXP.scene = new MainScene();
+	}
+
+	public static function main() { new Main(); }
+
+}</code></pre>
+<p>This is done to mark the created scene as currently active and visible. Right now our MainScene class is almost empty:</p>
+<pre><code class="haxe">import com.haxepunk.Scene;
+
+class MainScene extends Scene
+{
+	public override function begin()
+	{
+	}
+}</code></pre>
+<p>The begin() function, which is called when the object is initialized, currently does nothing. As an example, let's add a picture to the screen. I'll also make it moveable using the keyboard to demonstrate how easy it is to handle keyboard inputs in HaxePunk.</p>
+<p>First of all we need to add the picture to the assets directory to make it usable in the engine. Here's the image that I'm using for this example:</p>
+<img src="img/54.png" alt="Haxecoder logo" class="center">
+<p>Once you've put that in the assets directory with the name "logo.png", you can access it in HaxePunk by creating an Image instance and passing the path to the image to the constructor.</p>
+<p>All entities in HaxePunk (which is what our moving picture is going to be) have to extend the Entity class.</p>
+<p>Create a new Logo.hx class:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+/**
+ * Logo entity.
+ * @author Kirill Poletaev
+ */
+class Logo extends Entity
+{
+	private var speed:Int;
+
+	public function new() 
+	{
+		super(270, 190);
+		speed = 5;
+		graphic = new Image(&quot;graphics/logo.png&quot;);
+	}
+	
+	public override function update():Void {
+		if (Input.check(Key.RIGHT)) {
+			moveBy(speed, 0);
+		}
+		if (Input.check(Key.LEFT)) {
+			moveBy(-speed, 0);
+		}
+		if (Input.check(Key.DOWN)) {
+			moveBy(0, speed);
+		}
+		if (Input.check(Key.UP)) {
+			moveBy(0, -speed);
+		}
+	}
+	
+}</code></pre>
+<p>As seen above, I use the super() method in the constructor to set the initial coordinates for this entity. I then set a value for the "speed" variable that I created, and apply a new Image instance to the "graphic" property of the Entity. This way the image is tied to this Entity.</p>
+<p>Entity subclasses can override an update() method, which is called every frame by the parent Scene object.</p>
+<p>I check for keyboard inputs using the Input class and its check() method. The entity is moved around using the moveBy() method.</p>
+<p>Back to the MainScene class, I add the logo to the scene using the add() method:</p>
+<pre><code class="haxe">import com.haxepunk.Scene;
+
+class MainScene extends Scene
+{
+	public override function begin()
+	{
+		add(new Logo());
+	}
+}</code></pre>
+<p>You can now run the game and be able to move your image around.</p>
+<p>Just like in regular Haxe programs, you can use any compiler target, in this case I'm using neko:</p>
+<img src="img/50.png" alt="HaxePunk release build" class="center">
+<p>Compiling with these settings will result in a "game" that looks like this:</p>
+<img src="img/51.png" alt="HaxePunk example" class="center">
+<p>HaxePunk employs a useful debugging console. To enable it, simply compile your game in the "debug" mode:</p>
+<img src="img/52.png" alt="HaxePunk debugbuild" class="center">
+<p>It will make the compiled game look like this:</p>
+<img src="img/53.png" alt="HaxePunk debugging example" class="center">
+<p>Notice all the benchmarking statistics that are displayed in the bar at the top.</p>
+<p>Next time we'll take a look at other features of this engine <a href="25_haxepunk_shooting_game_tutorial_part_1.html">by creating a shooting game</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

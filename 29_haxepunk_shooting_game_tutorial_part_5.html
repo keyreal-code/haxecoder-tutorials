@@ -1,0 +1,144 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>29. HaxePunk shooting game tutorial: Part 5</title></head><body><h1>29. HaxePunk shooting game tutorial: Part 5</h1><h3>2014-09-30</h3><img alt="HaxePunk shooting game tutorial score" class="thumb" src="img/63.png">
+<p>In this part we're adding a visual score counter to our shooter game.</p>
+<p>HaxePunk provides a class for rendering texts using an embedded font - Text. Just like with an Emitter, it needs to be applied to a "graphic" property of an Entity.</p>
+<p>So we'll first create a new Entity subclass, Score.hx, which creates a new Text instance and assigns it as its own "graphic" value.</p>
+<p>The actual score number is stored in an integer variable. We'll add a public method which will provide an interface to increment the score value.</p><p>The code of Score.hx looks like this:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.Text;
+import flash.text.TextFormatAlign;
+import com.haxepunk.HXP;
+
+/**
+ * Score container and counter.
+ * @author Kirill Poletaev
+ */
+class Score extends Entity
+{
+	private var score:Text;
+	private var points:Int;
+
+	public function new() 
+	{
+		super();
+		score = new Text(&quot;Score: 0&quot;, 0, 50, HXP.width);
+		score.align = TextFormatAlign.CENTER;
+		score.size = 24;
+		graphic = score;
+		layer = -2;
+		points = 0;
+	}
+	
+	public function add(num:Int) {
+		points += num;
+		score.text = &quot;Score: &quot; + points;
+	}
+	
+}</code></pre>
+<p>The Text() constructor has several optional parameters. We can set the initial text value, the coordinates of the text field, its width and height, as well as a set of options in a TextOptions object.</p>
+<p>In the MainScene.hx class we need to instantiate this Score class. Add the instance to the scene, then pass the Score object reference as the third parameter in EnemyShip constructor.</p>
+<pre><code class="haxe">package ;
+
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	private var spawnInterval:Int;
+	private var enemyGraphic:Image;
+	private var explosion:Explosion;
+	private var score:Score;
+	
+	public function new()
+	{
+		super();
+		Input.define(&amp;quot;up&amp;quot;, [Key.UP, Key.W]);
+		Input.define(&amp;quot;down&amp;quot;, [Key.DOWN, Key.S]);
+		Input.define(&amp;quot;left&amp;quot;, [Key.LEFT, Key.A]);
+		Input.define(&amp;quot;right&amp;quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&amp;quot;atlas/atlas.xml&amp;quot;);
+		enemyGraphic = new Image(atlas.getRegion(&amp;quot;enemyShip&amp;quot;));
+		
+		player = new PlayerShip(atlas);
+		add(player);
+		spawnInterval = Math.round(Math.random() * 50) + 50;
+		
+		explosion = new Explosion(atlas);
+		add(explosion);
+		
+		score = new Score();
+		add(score);
+	}
+	
+	override public function update() {
+		super.update();
+		spawnInterval--;
+		if (spawnInterval == 0) {
+			var enemy = new EnemyShip(enemyGraphic, explosion, score);
+			add(enemy);
+			enemy.x = Math.round(Math.random() * (HXP.width-64));
+			enemy.y = -50;
+			spawnInterval = Math.round(Math.random() * 20)+30;
+		}
+	}
+	  
+ }</code></pre>
+<p>In the EnemyShip.hx class we receive and store a reference to this Score instance, and call its add() method when the ship is destroyed.</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.HXP;
+import com.haxepunk.graphics.Emitter;
+
+/**
+ * Enemy ship entity.
+ * @author Kirill Poletaev
+ */
+class EnemyShip extends Entity
+{
+	private var speed:Int;
+	private var health:Int;
+	private var explosion:Explosion;
+	private var score:Score;
+
+	public function new(g:Dynamic, explosion:Explosion, score:Score) 
+	{
+		super();
+		graphic = g;
+		this.explosion = explosion;
+		this.score = score;
+		speed = Math.ceil(Math.random() * 3);
+		setHitbox(64, 48, 0, 0);
+		health = 5;
+	}
+	
+	override public function update() {
+		this.y += speed;
+		if (this.y &gt; HXP.height) {
+			scene.remove(this);
+		}
+		var collidedEntity = collide(&quot;bullet&quot;, x, y);
+		if (collidedEntity != null) {
+			health--;
+			scene.remove(collidedEntity);
+			explosion.explode(x, y);
+		}
+		if (health == 0) {
+			var i:Int = 0;
+			while(i&lt;3){
+				explosion.explode(x, y);
+				i++;
+			}
+			score.add(1);
+			scene.remove(this);
+		}
+	}
+	
+}</code></pre>
+<p>If you test the game now, you'll notice a new score counter displayed. Every time you destroy an enemy ship the score increases.</p>
+<p>We'll <a href="30_haxepunk_shooting_game_tutorial_part_6.html">add sounds to our game in the next part</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

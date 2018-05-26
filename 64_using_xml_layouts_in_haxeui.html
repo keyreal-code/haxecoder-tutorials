@@ -1,0 +1,36 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>64. Using XML layouts in HaxeUI</title></head><body><h1>64. Using XML layouts in HaxeUI</h1><h3>2014-11-06</h3><img alt="HaxeUI XML" class="thumb" src="img/128.png">
+<p>In the previous tutorial I explained how to install HaxeUI and display its components programmatically.</p>
+<p>Adding UI elements using code allows for dynamic layout manipulation, but is not always convenient. It is much easier to store layouts separately from code in XML files, and HaxeUI has the ability to do so.</p>
+<p>Before we delve into layout creation, I should mention UI themes. HaxeUI has several built-in themes that you can use to change the appearance of all the controls in your application.</p><p>Changing a theme does not only alter the styling of a component, but may also affect its behavior. For example, GradientTheme will always display a scrollbar in a scrollable container, while DefaultTheme will only display it when the container is being scrolled. This makes some themes more suitable to be used in mobile applications than others.</p>
+<p>To set a theme, change the Toolkit's theme property before calling the init() method:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+</code></pre>
+<p>You can find the list of available built-in themes <a href="https://github.com/ianharrigan/haxeui/tree/master/haxe/ui/toolkit/themes">here</a>.</p>
+<p>Let's now create a simple layout in an XML file. You can use <a href="http://haxeui.org/try.jsp">this builder</a> to quickly see the results of your layout.</p>
+<p>I created a simple scrollview container with a few controls (dividers, buttons and text fields) lined up vertically:</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
+&lt;scrollview x=&quot;20&quot; y=&quot;20&quot; width=&quot;150&quot; height=&quot;150&quot;&gt;
+    &lt;vbox width=&quot;100%&quot;&gt;
+		&lt;divider text=&quot;Divider&quot; /&gt;
+		&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+		&lt;text text=&quot;Text field&quot; width=&quot;100%&quot; /&gt;
+		&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+		&lt;text text=&quot;Text field&quot; width=&quot;100%&quot; /&gt;
+		&lt;divider text=&quot;Divider&quot; /&gt;
+		&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+		&lt;text text=&quot;Text field&quot; width=&quot;100%&quot; /&gt;
+		&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+		&lt;text text=&quot;Text field&quot; width=&quot;100%&quot; /&gt;
+	&lt;/vbox&gt;
+&lt;/scrollview&gt;</code></pre>
+<p>Save this as mainLayout.xml and put it in the assets/layouts/ directory of your project.</p>
+<p>This asset path has to be declared in the applications.xml file:</p>
+<pre><code class="xml">&lt;assets path=&quot;assets/layouts&quot; rename=&quot;layouts&quot; /&gt;</code></pre>
+<p>Back in Main.hx, you can load the layout from the resource and display it using the processXmlResource() method.</p>
+<pre><code class="haxe">Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	root.addChild(view);
+});
+</code></pre>
+<p>You can see that the layout described in the resource is converted into an actual component (which implements IDisplayObject), which can then be added to the root just like any other component.</p><footer>&copy; Kirill Poletaev</footer></body></html>

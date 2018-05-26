@@ -1,0 +1,132 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>25. HaxePunk shooting game tutorial: Part 1</title></head><body><h1>25. HaxePunk shooting game tutorial: Part 1</h1><h3>2014-09-26</h3><img alt="HaxePunk shooting game" class="thumb" src="img/55.png">
+<p>HaxePunk is a game framework, so the best way to learn its features is by making a game.</p>
+<p>In this tutorial series I'll be making a simple vertical shooter game. Today we'll cover packing textures into atlases for hardware rendering, as well as movement of our space ship.</p>
+<p>If you haven't installed HaxePunk yet, do so by <a href="24_haxepunk_tutorial_getting_started.html">following this tutorial</a>.</p>
+<p>Texture packing is not a new concept, I previously explained it in my <a href="18_tile_based_game_tutorial_using_haxe_and_openfl_part_1.html">tile based game creation tutorial</a>.</p><p>Basically, texture packing is taking multiple graphics resources and stuffing them onto one image, which can then be fed to the GPU and sliced up in regions, which are then used as separate graphics. This concept exists it most platforms that are used for game development.</p>
+<p>The resulting image is called an atlas, or, in some cases, a spritesheet or tileset. You can create this image yourself, or use a software like TexturePacker, which creates an atlas and an xml file from provided graphics. The xml file is used to define the regions.</p>
+<p>Create a new HaxePunk project, and edit the project.xml file right away.</p>
+<p>In this case I disabled window resizing, changed the background color, and, most importantly, I added an asset path to the assets/atlas directory.</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;project&gt;
+	&lt;meta title=&quot;HaxePunk Shooter&quot; package=&quot;com.example.app&quot; version=&quot;1.0.0&quot; company=&quot;&quot; /&gt;
+
+ 	&lt;app file=&quot;Main2&quot; main=&quot;Main&quot; path=&quot;bin&quot; /&gt;
+
+	&lt;window fps=&quot;30&quot; background=&quot;0x19263a&quot; /&gt;
+	&lt;window width=&quot;640&quot; height=&quot;480&quot; resizable=&quot;false&quot; unless=&quot;mobile&quot; /&gt;
+	&lt;window fullscreen=&quot;true&quot; if=&quot;mobile&quot; /&gt;
+	&lt;window orientation=&quot;landscape&quot; vsync=&quot;true&quot; antialiasing=&quot;0&quot; if=&quot;cpp&quot; /&gt;
+
+	&lt;source path=&quot;src&quot; /&gt;
+
+	&lt;haxelib name=&quot;openfl&quot; /&gt;
+	&lt;haxelib name=&quot;openfl-bitfive&quot; if=&quot;html5&quot; /&gt;
+	&lt;haxelib name=&quot;HaxePunk&quot; /&gt;
+
+	&lt;assets path=&quot;assets/graphics&quot; rename=&quot;graphics&quot; include=&quot;*.png|*.jpg&quot; /&gt;
+	&lt;assets path=&quot;assets/audio&quot; rename=&quot;audio&quot; include=&quot;*.mp3&quot; if=&quot;flash&quot; /&gt;
+	&lt;assets path=&quot;assets/audio&quot; rename=&quot;audio&quot; include=&quot;*.wav|*.ogg&quot; unless=&quot;flash&quot; /&gt;
+	&lt;assets path=&quot;assets/font&quot; rename=&quot;font&quot; include=&quot;*.ttf&quot; /&gt;
+	&lt;assets path=&quot;assets/atlas&quot; rename=&quot;atlas&quot; include=&quot;*.xml&quot; /&gt;
+
+	&lt;icon path=&quot;assets/HaxePunk.svg&quot; /&gt;
+&lt;/project&gt;</code></pre>
+<p>Let's add the assets now. Firstly we'll add the atlas with all the graphics packed in it. Here's one I made:</p>
+<img alt="HaxePunk shooting game atlas" class="center" src="img/57.png">
+<p>Now create an assets/atlas/ directory and place an atlas.xml file in it. This is where we will define the regions of the atlas which represent different graphics. Once again, if you use a program like TexturePacker, this xml will be generated automatically, but you can write it yourself, as long as it looks like this:</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;TextureAtlas imagePath=&quot;graphics/graphics.png&quot; width=&quot;128&quot; height=&quot;72&quot;&gt;
+	&lt;sprite n=&quot;playerShip&quot; x=&quot;0&quot; y=&quot;0&quot; w=&quot;64&quot; h=&quot;48&quot;/&gt;
+	&lt;sprite n=&quot;enemyShip&quot; x=&quot;64&quot; y=&quot;0&quot; w=&quot;64&quot; h=&quot;48&quot;/&gt;
+	&lt;sprite n=&quot;bullet&quot; x=&quot;0&quot; y=&quot;48&quot; w=&quot;14&quot; h=&quot;24&quot;/&gt;
+	&lt;sprite n=&quot;powerup&quot; x=&quot;14&quot; y=&quot;48&quot; w=&quot;22&quot; h=&quot;24&quot;/&gt;
+	&lt;sprite n=&quot;explosion&quot; x=&quot;36&quot; y=&quot;48&quot; w=&quot;22&quot; h=&quot;24&quot;/&gt;
+	&lt;sprite n=&quot;heart&quot; x=&quot;58&quot; y=&quot;48&quot; w=&quot;22&quot; h=&quot;24&quot;/&gt;
+&lt;/TextureAtlas&gt;</code></pre>
+<p>Now we have an atlas graphic and an atlas xml file.</p>
+<p>Let's make a moveable player ship entity, which will use the first graphic from the atlas.</p>
+<p>Create a new PlayerShip class. Here's the code:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.atlas.AtlasRegion;
+import com.haxepunk.HXP;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+/**
+ * Player ship.
+ * @author Kirill Poletaev
+ */
+class PlayerShip extends Entity
+{
+	private var movespeed:Int;
+
+	public function new(g:Dynamic) 
+	{
+		super();
+		graphic = g;
+		movespeed = 8;
+		width = 64;
+		height = 48;
+		x = HXP.width/2 - width/2;
+		y = HXP.height - 80;
+	}
+	
+	override public function update() {
+		if (Input.check(&quot;down&quot;)) {
+			moveBy(0, movespeed);
+		}
+		if (Input.check(&quot;up&quot;)) {
+			moveBy(0, -movespeed);
+		}
+		if (Input.check(&quot;right&quot;)) {
+			moveBy(movespeed, 0);
+		}
+		if (Input.check(&quot;left&quot;)) {
+			moveBy(-movespeed, 0);
+		}
+		
+		if (this.x &lt; 0) this.x = 0;
+		if (this.y &lt; 0) this.y = 0;
+		if (this.x &gt; HXP.width - width) this.x = HXP.width - width;
+		if (this.y &gt; HXP.height - height) this.y = HXP.height - height;
+	}
+	
+}</code></pre>
+<p>You can see that the constructor receives a graphic object as a parameter, and sets it as the graphic of the Entity. This means that we'll have to pass the ship graphic here later.</p>
+<p>I use the HXP class' properties to center the spawned ship in the center of the bottom of the screen.</p>
+<p>The update() function has movement logic, which checks for inputs using the Input class. Notice what values I pass to the check() methods - string values like "up" are not valid key identifiers by default. However, they are usable in this case because these strings do not represent actual keys, but key groups, which are declared earlier.</p>
+<p>By earlier, I mean the MainScene class. Here's the full code to it:</p>
+<pre><code class="haxe">import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	
+	public function new()
+	{
+		super();
+		Input.define(&quot;up&quot;, [Key.UP, Key.W]);
+		Input.define(&quot;down&quot;, [Key.DOWN, Key.S]);
+		Input.define(&quot;left&quot;, [Key.LEFT, Key.A]);
+		Input.define(&quot;right&quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&quot;atlas/atlas.xml&quot;);
+		
+		player = new PlayerShip(new Image(atlas.getRegion(&quot;playerShip&quot;)));
+		add(player);
+	}
+	  
+ }</code></pre>
+<p>You can see that in the beginning of the code I define 4 key groups, identified by string values like "up" and "left". These key groups, in this case, each consist of 2 keys.</p>
+<p>Using this configuration, we can control our ship using WASD or the arrow keys.</p>
+<p>Next, I declare a TextureAtlas object. The object is instantiated using a static method called loadTexturePacker(), which parses our atlas xml file.</p>
+<p>When the PlayerShip instance is created, I create an Image object out of the "playerShip" region in the atlas, and pass it as the constructor parameter.</p>
+<p>As a result, when you debug the game, you'll have something that looks like this:</p>
+<img alt="HaxePunk shooting game" class="center" src="img/56.png">
+<p>In the next part, we'll <a href="26_haxepunk_shooting_game_tutorial_part_2.html">add shooting functionality to our game</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

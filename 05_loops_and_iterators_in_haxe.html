@@ -1,0 +1,70 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>05. Loops and iterators in Haxe</title></head><body><h1>05. Loops and iterators in Haxe</h1><h3>2014-09-06</h3><img alt="loop" src="img/17.png" class="thumb"><p>Loops are widely used in all programming languages to repeat an action until a condition is met.</p>
+<p>Besides the usual while loop, Haxe employs iterators, which can then be used in for loops. This means that for loops are slightly different from the usual C++ syntax.</p>
+<p>Let's take a closer look at the supported loops.</p><p>The while loop follows the usual pattern and lets you keep executing an action until a condition is met. There are two ways to write it down. This first way to define a while loop is to enter the condition in the brackets after the "while" keyword:</p>
+<pre><code class="haxe">var i:Int = 0;
+while (i &lt; 10) {
+	// action
+	i++;
+}
+</code></pre>
+<p>The second way is to use an additional "do" keyword:</p>
+<pre><code class="haxe">var i:Int = 0;
+do {
+	// action
+	i++;
+}while(i &lt; 10);
+</code></pre>
+<p>For loops in Haxe use iterators to loop over. An iterator is an object of the Iterator or Iterable type, which provide an interface to return elements from a set.</p>
+<p>The simplest iterator can be created using the ... operator:</p>
+<pre><code class="haxe">var i:Int;
+for (i in 0...10) {
+	trace(i);
+}
+</code></pre>
+<p>The 0...10 expression creates a numeric iterator which runs the cycle 10 times, each time incrementing the i value by 1.</p>
+<p>The trace function in this case prints the i value to the console when testing the application.</p>
+<p>Using this method, it is possible to iterate over an array:</p>
+<pre><code class="haxe">var i:Int;
+var arr:Array<String> = ["Hello", "world", "how", "are", "you"];
+for (i in 0...arr.length) {
+	trace(arr[i]);
+}
+</code></pre>
+<p>Creating a custom iterator class is easy. As I mentioned above, two types can be used in for loops - Iterator and Iterable. An Iterator is a class that has two methods: hasNext() and next(), which return the availability of the next element and its value. An Iterable should have a method iterator(), which returns an Iterator object.</p>
+<p>Let's create a custom iterator which lets us loop over a string to print out each character individually.</p>
+<p>Here is the code:</p>
+<pre><code class="haxe">class StringIterator
+{
+	private var str:String;
+	private var i:Int;
+
+	public function new(str:String) 
+	{
+		this.str = str;
+		i = 0;
+	}
+	
+	public function hasNext():Bool {
+		return i &lt; str.length;
+	}
+	
+	public function next():String {
+		return str.charAt(i++);
+	}
+	
+}
+</code></pre>
+<p>We declare 2 variables, one for holding the string and one for the position in the set.</p>
+<p>The new() constructor will be used to pass the string value to the iterator.</p>
+<p>The hasNext() method returns a true or false value based on whether we reached the end of the string.</p>
+<p>The next() method will print the character at current position and then increment the position by 1.</p>
+<p>This iterator can later be used like this:</p>
+<pre><code class="haxe">var iterator:StringIterator = new StringIterator("Hello");
+var char:String;
+for (char in iterator) {
+	trace(char);
+}
+</code></pre>
+<p>The debugger console will print out each character of the "Hello" string individually.</p>
+<p>And that's how you use loops and iterators in Haxe. As you can see, this kind of concept is easy to use and customize and will surely speed up your development.</p>
+<p>In the next tutorial we will learn <a href="6_enum_types_in_haxe.html">how to use Enums in Haxe</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

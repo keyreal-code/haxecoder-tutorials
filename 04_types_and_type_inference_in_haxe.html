@@ -1,0 +1,55 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>04. Types and type inference in Haxe</title></head><body><h1>04. Types and type inference in Haxe</h1><h3>2014-09-05</h3><img src="img/16.png" class="thumb" alt="Haxe type system"><p>Haxe, like many OOP languages, is strictly typed. This means that every object needs to have a type. The Haxe compiler will warn you about type related errors before you even run your program.</p>
+<p>In this tutorial we'll learn about the type system in Haxe, as well as type inference that Haxe employs.</p><p>When a variable is declared, its type is specified after its name.</p>
+<pre><code class="haxe">var myText:String;</code></pre>
+<p>There are three basic types in Haxe - Bool, Int and Float.</p>
+<p>Bool, also known as boolean, has 2 possible values - true and false.</p>
+<pre><code class="haxe">var flag:Bool = true;</code></pre>
+<p>An Int is an integral number.</p>
+<pre><code class="haxe">var num:Int = 120;</code></pre>
+<p>It is also possible to use the hexadecimal format with Int type:</p>
+<pre><code class="haxe">var red:Int = 0xff0000;</code></pre>
+<p>The Float type is used for storing floating point numbers:</p>
+<pre><code class="haxe">var pi:Float = 3.14;</code></pre>
+<p>The compiler will throw an error on compilation if it finds any type mismatches. For example, assigning a String value to an Int is illegal and will not compile. In case you need to create a variable that can accept any value, there's Dynamic type for that. Note that its use is not recommended and you should only use Dynamic type when absolutely necessary.</p>
+<pre><code class="haxe">var v:Dynamic = 3.14;
+v = "Text";</code></pre>
+<p>Types should also be specified for elements of Arrays and Vectors, like so:</p>
+<pre><code class="haxe">var numbers:Array&lt;Int&gt; = [1, 2, 3, 4, 5];
+var text:Array&lt;String&gt; = [&quot;Hello&quot;, &quot;world&quot;];</code></pre>
+<p>If you want to use differently typed values in Arrays of Vectors, you can use the Dynamic type:</p>
+<pre><code class="haxe">var d:Array&lt;Dynamic&gt; = [1, 2, 3, &quot;Hello&quot;, &quot;world&quot;];</code></pre>
+<p>Multi dimensional arrays are declared like this:</p>
+<pre><code class="haxe">var arr:Array&lt;Array&lt;Int&gt;&gt; = [[1, 2, 3],[1, 2, 3],[1, 2, 3]];</code></pre>
+<p>Even though Haxe is a strictly typed language, the compiler has type inference, which means that actually writing the type is optional.</p>
+<p>When a variable is declared without a type, it receives the Unknown type, until the compiler finds the first line that directly sets a value to that variable and automatically assigns the type. The type can not be changed after that.</p>
+<p>For example, these two lines are both legal:</p>
+<pre><code class="haxe">var myVar:String = "Text";
+var myOtherVar = "Text";</code></pre>
+<p>The reason is that the compiler sees the "Text" value being assigned as the value, sees that the value is a String value, and figures out to set the type of the variable to String.</p>
+<p>This can also be done with any class:</p>
+<pre><code class="haxe">var myCustomThing = new CustomThing();</code></pre>
+<p>An example of an declaring a variable without a type, and assigning a value after that:</p>
+<pre><code class="haxe">var myVar;
+myVar = "text";</code></pre>
+<p>At this point myVar's type is set to String by the compiler and can not be changed.</p>
+<p>Watch out for errors like this:</p>
+<pre><code class="haxe">var myVar;
+myVar = 10;
+myVar = "hello";</code></pre>
+<p>The compiler will throw an error, because the type of the variable is set to Int when the number is assigned as its value, and remains Int when you try to assign a string value to it. Since we can't assign a String value to an Int variable, there's a type mismatch.</p>
+<p>Type inference also applies to function parameters:</p>
+<pre><code class="haxe">function myFunction(param: Int)
+{
+}</code></pre>
+<p>Function with an untyped parameter would look like this:</p>
+<pre><code class="haxe">function myFunction(param)
+{
+}</code></pre>
+<p>In this case, the type is set according to what is sent to the function first.</p>
+<p>Here, the parameter type is set to Int:</p>
+<pre><code class="haxe">myFunction(100);</code></pre>
+<p>And in this case it's set to String:</p>
+<pre><code class="haxe">myFunction("Hello");</code></pre>
+<p>Again, if the parameter type was already set once, all following calls need to use that parameter type.</p>
+<p>Although type inference is a convenient feature to have and will often speed up the coding, it is still a good idea to always type your variables, at least for the sake of code readability.</p>
+<p>Now that we have a basic knowledge of the type system in Haxe, let's move on to learn about the <a href="5_loops_and_iterators_in_haxe.html">loops and iterators in Haxe</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

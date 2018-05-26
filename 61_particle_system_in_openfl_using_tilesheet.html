@@ -1,0 +1,89 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>61. Particle system in OpenFL using Tilesheet</title></head><body><h1>61. Particle system in OpenFL using Tilesheet</h1><h3>2014-11-01</h3><img alt="Particle system OpenFL Tilesheet" class="thumb" src="img/124.png">
+<p>In this part I'll show you how to make a simple particle system from scratch using nothing but OpenFL and the built-in Tilesheet class.</p>
+<p>I'll explain how to create and manage simple particles and their properties, such as velocity and acceleration. The example will include a simple collision of the particles with the floor.</p>
+<p>Some knowledge about the Tilesheet class is required, so check out my <a href="14_fast_2d_rendering_using_tilesheets_in_openfl.html">Tilesheet tutorial</a> if you haven't already.</p>
+<p>Start by creating an OpenFL project using the default template.</p><p>Add a new Particle.hx class:</p>
+<pre><code class="haxe">package ;
+import openfl.geom.Point;
+
+class Particle
+{
+	public var x:Float;
+	public var y:Float;
+	public var vel_x:Float;
+	public var vel_y:Float;
+	public var acc_x:Float;
+	public var acc_y:Float;
+	
+	public function new(){}
+}</code></pre>
+<p>As you can see, it is a very simple class that stores the coordinates, velocity and acceleration of a single particle.</p>
+<p>Go to the generated Main.hx class and introduce 3 new variables:</p>
+<pre><code class="haxe">var tilesheet:Tilesheet;
+var screen:Sprite;
+var particles:Array<Particle>;
+</code></pre>
+<p>You can guess from the names that the first object is a Tilesheet instance, the second is a "canvas" container, and the third is an array of visible particles.</p>
+<p>Instantiate all of these variables in the init() function, add a simple graphic for the particle (a 4x4 blue square in my case) and add an ENTER_FRAME event listener.</p>
+<pre><code class="haxe">function init() 
+{
+	if (inited) return;
+	inited = true;
+	
+	screen = new Sprite();
+	addChild(screen);
+	
+	particles = new Array&lt;Particle&gt;();
+	
+	var particle:BitmapData = new BitmapData(4, 4, false, 0x0000ff);
+	tilesheet = new Tilesheet(particle);
+	tilesheet.addTileRect(new Rectangle(0, 0, 4, 4));
+	
+	this.addEventListener(Event.ENTER_FRAME, update);
+}</code></pre>
+<p>The event handler will do 3 things.</p>
+<p>Firstly, it will create a new particle every frame with random values and add it to the array.</p>
+<p>Secondly, the particles properties will be updated. This is where we update the coordinates based on the velocity, and the velocity based on the acceleration. This is also where we can add collision with the ground and remove particles that are off screen.</p>
+<p>Thirdly, a tileData array will be generated for the visible arrays, which will later be used by our Tilesheet object to render the particles.</p>
+<p>The second and third steps can be united in a single for loop.</p>
+<p>Here's the full update() code:</p>
+<pre><code class="haxe">public function update(e:Event) {
+	// add particle
+	var newParticle:Particle = new Particle();
+	newParticle.x = 0;
+	newParticle.y = 0;
+	newParticle.acc_x = 0;
+	newParticle.acc_y = 0.5;
+	newParticle.vel_x = Math.random() * 7 + 3;
+	newParticle.vel_y = Math.random() * 5;
+	
+	particles.push(newParticle);
+	
+	// render
+	screen.graphics.clear();
+	var tileData:Array&lt;Float&gt; = new Array&lt;Float&gt;();
+	var particle:Particle;
+	for (particle in particles) {
+		if (particle.x &gt; stage.stageWidth) {
+			particles.remove(particle);
+		} else {
+			tileData = tileData.concat([particle.x, particle.y, 0]);
+			
+			particle.x += particle.vel_x;
+			particle.y += particle.vel_y;
+			particle.vel_x += particle.acc_x;
+			particle.vel_y += particle.acc_y;
+			if (particle.y &gt; stage.stageHeight) {
+				particle.y = stage.stageHeight;
+				particle.vel_y *= -Math.random()*0.7;
+			}
+		}
+	}
+	
+	tilesheet.drawTiles(screen.graphics, tileData);
+}
+</code></pre>
+<p>Using this snippet, you can add additional rendering properties (such as rotation) using flags. Refer to my <a href="14_fast_2d_rendering_using_tilesheets_in_openfl.html">Tilesheet tutorial</a>.</p>
+<p>The results look like this:</p>
+<img alt="Particle system OpenFL Tilesheet" class="center" src="img/125.gif">
+<p>The real application will look way smoother, because of the better framerate.</p><footer>&copy; Kirill Poletaev</footer></body></html>

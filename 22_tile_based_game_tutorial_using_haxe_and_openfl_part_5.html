@@ -1,0 +1,204 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>22. Tile based game tutorial using Haxe and OpenFL: Part 5</title></head><body><h1>22. Tile based game tutorial using Haxe and OpenFL: Part 5</h1><h3>2014-09-23</h3><img src="img/46.png" alt="Tile based collision detection Haxe OpenFL" class="thumb">
+<p>Collision detection is a rather complex subject. Nevertheless, there are tons of ways to implement it. And it mostly depends on your existing game system.</p>
+<p>Since our game is tile-based, we can take advantage of the fact that all our obstacles are tile-sized and stored in a matrix.</p>
+<p>Today I'll show you how to create a simple, but very efficient and precise collision detection system for tile based games in Haxe and OpenFL.</p>
+<p>We are going to store the collision detection logic in a separate class with static methods for re-usability purposes.</p><p>The only piece of code in Main.hx that's going to change is the ENTER_FRAME event handler. We'll add a new local variable which shall hold the movement vector. Instead of applying the coordinate changes to the character's position Point, we'll store those values in this temporary movement vector. We will then pass that along with some other values to the TileCollisionDetector class' detect() method, which will perform the necessary calculations and change the character's position correctly.</p>
+<pre><code class="haxe">private function everyFrame(evt:Event):Void {
+	var move:Point = new Point();
+	
+	// Character walking
+	if (keysHeld[38]) {
+		character.face(Up);
+		character.animate();
+		move.y -= character.movementSpeed;
+	} else if (keysHeld[39]) {
+		character.face(Right);
+		character.animate();
+		move.x += character.movementSpeed;
+	} else if (keysHeld[40]) {
+		character.face(Down);
+		character.animate();
+		move.y += character.movementSpeed;
+	} else if (keysHeld[37]) {
+		character.face(Left);
+		character.animate();
+		move.x -= character.movementSpeed;
+	}else {
+		character.resetAnim();
+	}
+	
+	TileCollisionDetector.detect(map, character.position, move, tileSize);
+	
+	drawEntities();
+}</code></pre>
+<p>The detect() method of the TileCollisionDetector class looks like this:</p>
+<pre><code class="haxe">public static function detect(map:Array&lt;Array&lt;Int&gt;&gt;, position:Point, movementVector:Point, tileSize:Int):Void
+{
+	// position coordinates on the grid
+	var tileCoords:Point = new Point(0, 0);
+	var approximateCoords:Point = new Point();
+	
+	position.y += movementVector.y;
+	checkBottomCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+	checkTopCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+	
+	position.x += movementVector.x;
+	checkRightCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+	checkLeftCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+}
+</code></pre>
+<p>As you can see, we create 2 local Point objects - tileCoords and approximateCoords. These objects are later passed on to 4 collision checking functions, which manipulate and modify their values.</p>
+<p>Those functions are similar to each other, so let's take a look at just one:</p>
+<pre><code class="haxe">private static function checkBottomCollision(tileCoords:Point, approximateCoords:Point, position:Point, movementVector:Point, tileSize:Int, map:Array&lt;Array&lt;Int&gt;&gt;):Void {
+	// Bottom collision
+	if (movementVector.y &gt;= 0) {
+		approximateCoords.x = position.x / tileSize;
+		approximateCoords.y = position.y / tileSize;
+		tileCoords.y = Math.ceil(approximateCoords.y);
+		
+		tileCoords.x = Math.floor(approximateCoords.x);
+		if (isBlock(tileCoords, map)) {
+			position.y = (tileCoords.y - 1) * tileSize;
+			movementVector.y = 0;
+		}
+		
+		tileCoords.x = Math.ceil(approximateCoords.x);
+		if (isBlock(tileCoords, map)) {
+			position.y = (tileCoords.y - 1) * tileSize;
+			movementVector.y = 0;
+		}
+	}
+}
+</code></pre>
+<p>Since this is a funciton that is supposed to check the character's bottom border's collision with the world, I firstly do a simple check to see if the character is even moving in that direction. After that the approximateCoords values is calculated by dividing the actual coordinates of the character with the tileSize.</p>
+<p>As a result, we get a set of approximate coordinates on the grid. Normally, the grid coordinates are integer values on both axi - (4,5), (0,6), etc. Since we divide without rounding anything up, the results are Floats: (0, 1.24), (5.33, 4.22), etc.</p>
+<p>When a coordinate is not rounded, it means the character is located on two grid tiles instead of one.</p>
+<p>Imagine if our character was always snapped to the grid. One step would mean jumping to the neighbor tile. This way, the collision would have been extremely simple - refer to the map array and just check that tile's value. If it's 0 - allow the move, if it's 1 - that means there's an obstacle in the way, so we can't move.</p>
+<p>Because in our case the character may not necessarily be snapped to the grid, we need to use the approximate coordinations to check collision not with 1, but with 2 tiles below (above, to the left or to the right) the character.</p>
+<p>This is done by rounding the x (in this case) coordinate two times using ceil() and floor(). We then check if the tiles are obstacles using the isBlock() method. If an obstacle was found, we snap the character to the tile that's closest to the obstacle (so that he's touching the wall).</p>
+<p>The isBlock() method simply checks if the tile is an obstacle, according to its value in the map matrix:</p>
+<pre><code class="haxe">private static function isBlock(coords:Point, map:Array&lt;Array&lt;Int&gt;&gt;):Bool {
+	return map[Math.round(coords.y)][Math.round(coords.x)] == 1;
+}
+</code></pre>
+<p>The full code of the TileCollisionDetector.hx class looks like this:</p>
+<pre><code class="haxe">package ;
+import openfl.display.Sprite;
+import openfl.geom.Point;
+
+/**
+ * ...
+ * @author Kirill Poletaev
+ */
+class TileCollisionDetector
+{
+
+	public static function detect(map:Array&lt;Array&lt;Int&gt;&gt;, position:Point, movementVector:Point, tileSize:Int):Void
+	{
+		// position coordinates on the grid
+		var tileCoords:Point = new Point(0, 0);
+		var approximateCoords:Point = new Point();
+		
+		position.y += movementVector.y;
+		checkBottomCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+		checkTopCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+		
+		position.x += movementVector.x;
+		checkRightCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+		checkLeftCollision(tileCoords, approximateCoords, position, movementVector, tileSize, map);
+	}
+	
+	private static function checkBottomCollision(tileCoords:Point, approximateCoords:Point, position:Point, movementVector:Point, tileSize:Int, map:Array&lt;Array&lt;Int&gt;&gt;):Void {
+		// Bottom collision
+		if (movementVector.y &gt;= 0) {
+			approximateCoords.x = position.x / tileSize;
+			approximateCoords.y = position.y / tileSize;
+			tileCoords.y = Math.ceil(approximateCoords.y);
+			
+			tileCoords.x = Math.floor(approximateCoords.x);
+			if (isBlock(tileCoords, map)) {
+				position.y = (tileCoords.y - 1) * tileSize;
+				movementVector.y = 0;
+			}
+			
+			tileCoords.x = Math.ceil(approximateCoords.x);
+			if (isBlock(tileCoords, map)) {
+				position.y = (tileCoords.y - 1) * tileSize;
+				movementVector.y = 0;
+			}
+		}
+	}
+	
+	private static function checkTopCollision(tileCoords:Point, approximateCoords:Point, position:Point, movementVector:Point, tileSize:Int, map:Array&lt;Array&lt;Int&gt;&gt;):Void {
+		// Top collision
+		if (movementVector.y &lt; 0) {
+			approximateCoords.x = position.x / tileSize;
+			approximateCoords.y = position.y / tileSize;
+			
+			tileCoords.y = Math.floor(approximateCoords.y);
+			
+			tileCoords.x = Math.floor(approximateCoords.x);
+			if (isBlock(tileCoords, map)) {
+				position.y = (tileCoords.y + 1) * tileSize;
+				movementVector.y = 0;
+			}
+			
+			tileCoords.x = Math.ceil(approximateCoords.x);
+			if (isBlock(tileCoords, map)) {
+				position.y = (tileCoords.y + 1) * tileSize;
+				movementVector.y = 0;
+			}
+		}
+	}
+	
+	private static function checkRightCollision(tileCoords:Point, approximateCoords:Point, position:Point, movementVector:Point, tileSize:Int, map:Array&lt;Array&lt;Int&gt;&gt;):Void {
+		// Right collision
+		if(movementVector.x &gt; 0){
+			approximateCoords.x = position.x / tileSize;
+			approximateCoords.y = position.y / tileSize;
+			
+			tileCoords.x = Math.ceil(approximateCoords.x);
+			
+			tileCoords.y = Math.floor(approximateCoords.y);
+			if (isBlock(tileCoords, map)) {
+				position.x = (tileCoords.x - 1) * tileSize;
+				movementVector.x = 0;
+			}
+			
+			tileCoords.y = Math.ceil(approximateCoords.y);
+			if (isBlock(tileCoords, map)) {
+				position.x = (tileCoords.x - 1) * tileSize;
+				movementVector.x = 0;
+			}
+		}
+	}
+	
+	private static function checkLeftCollision(tileCoords:Point, approximateCoords:Point, position:Point, movementVector:Point, tileSize:Int, map:Array&lt;Array&lt;Int&gt;&gt;):Void {
+		// Left collision
+		if(movementVector.x &lt;= 0){
+			approximateCoords.x = position.x / tileSize;
+			approximateCoords.y = position.y / tileSize;
+			
+			tileCoords.x = Math.floor(approximateCoords.x);
+			
+			tileCoords.y = Math.floor(approximateCoords.y);
+			if (isBlock(tileCoords, map)) {
+				position.x = (tileCoords.x + 1) * tileSize;
+				movementVector.x = 0;
+			}
+			
+			tileCoords.y = Math.ceil(approximateCoords.y);
+			if (isBlock(tileCoords, map)) {
+				position.x = (tileCoords.x + 1) * tileSize;
+				movementVector.x = 0;
+			}
+		}
+	}
+	
+	private static function isBlock(coords:Point, map:Array&lt;Array&lt;Int&gt;&gt;):Bool {
+		return map[Math.round(coords.y)][Math.round(coords.x)] == 1;
+	}
+	
+}</code></pre>
+<p>If you test the game now, you'll be able to move the character, but you won't be able to walk into the water.</p>
+<p>We will extend this collision system <a href="23_tile_based_game_tutorial_using_haxe_and_openfl_part_6.html">by adding collectibles in the next part</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

@@ -1,0 +1,59 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>67. Styling in HaxeUI</title></head><body><h1>67. Styling in HaxeUI</h1><h3>2014-11-13</h3><img class="thumb" alt="HaxeUI styling" src="img/134.png">
+<p>There are several ways to style components in HaxeUI.</p>
+<p>Fortunately, HaxeUI tries to follow the convenient CSS + HTML pattern so if you're familiar with those, you'll have no problem grasping this concept quickly.</p>
+<p>You can style controls in code by accessing and setting values to the properties of their "style" property directly. This is the most obvious but the least convenient way to change the appearance of a component, so let's jump right into the CSS approach.</p>
+<p>You can create CSS descriptions using the static StyleManager class, add them to the layout XML in a "style" node, or store them in a separate CSS file and load that.</p><p>To add a style description in code, use the StyleManager.instance.addStyle() method.</p>
+<p>Selectors follow the usual CSS syntax, so you can access all components of the type Button and apply the style to them. For example:</p>
+<pre><code class="haxe">StyleManager.instance.addStyle(&quot;Button&quot;, new Style({
+	color: 0xFF0000,
+	fontSize: 20,
+}));
+</code></pre>
+<img class="center" alt="HaxeUI styling" src="img/135.png">
+<p>If you want to style an individual control with a specific ID, use the # selector:</p>
+<pre><code class="haxe">StyleManager.instance.addStyle(&quot;#myButton&quot;, new Style({
+	color: 0xFF0000,
+	fontSize: 20,
+}));
+</code></pre>
+<img class="center" alt="HaxeUI styling" src="img/136.png">
+<p>Similarly to the "class" attribute in HTML, you can apply styles to components using the "styleName" attribute.</p>
+<pre><code class="xml">&lt;button text=&quot;Button&quot; width=&quot;100%&quot; styleName=&quot;myStyle&quot; /&gt;</code></pre>
+<p>You can also combine selectors. In the next example I set the style to the button with the id "myButton" and all components with the styleName "myStyle":</p>
+<pre><code class="haxe">StyleManager.instance.addStyle(&quot;#myButton, .myStyle&quot;, new Style({
+	color: 0xFF0000,
+	fontSize: 20,
+}));
+</code></pre>
+<img class="center" alt="HaxeUI styling" src="img/137.png">
+<p>Let's take the last example and recreate the same effect, except this time we'll store the style description in the XML layout itself.</p>
+<p>The style has to be stored in a "style" node. The syntax resembles CSS even more now:</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
+&lt;vbox width=&quot;150&quot;&gt;
+	&lt;style&gt;
+		#myButton, .myStyle{
+			color: #FF0000;
+			fontSize: 20;
+		}
+	&lt;/style&gt;
+	&lt;button text=&quot;myButton&quot; id=&quot;myButton&quot; width=&quot;100%&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; styleName=&quot;myStyle&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+&lt;/vbox&gt;</code></pre>
+<p>Now let's try doing the same thing, but storing the styles in an external CSS file. Create a CSS file in assets/styles/ directory (I called this file myStyleSheet.css), so that we can load it later. The contents look like this:</p>
+<pre><code class="xml">#myButton, .myStyle{
+	color: #FF0000;
+	fontSize: 20;
+}</code></pre>
+<p>Remember to add this line to your applications.xml file to make the styles directory visible:</p>
+<pre><code class="xml">&lt;assets path=&quot;assets/styles&quot; rename=&quot;styles&quot; /&gt;</code></pre>
+<p>You can then load the CSS from code using the following line:</p>
+<pre><code class="haxe">Macros.addStyleSheet(&quot;assets/styles/myStyleSheet.css&quot;);</code></pre>
+<p>You can also set styles to specific states of a control.</p>
+<pre><code class="xml">#myButton:over, .myStyle:over{
+	color: #FF0000;
+	fontSize: 20;
+}</code></pre>
+<img class="center" alt="HaxeUI styling" src="img/139.png"><footer>&copy; Kirill Poletaev</footer></body></html>

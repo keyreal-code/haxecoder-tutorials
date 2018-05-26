@@ -1,0 +1,27 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>71. Getting started with snowkit with luxe engine</title></head><body><h1>71. Getting started with snowkit with luxe engine</h1><h3>2014-11-27</h3><img alt="snowkit luxe engine Haxe" class="thumb" src="img/144.png">
+<p><a href="http://snowkit.org/">Snowkit</a> is an open-source system of tools, libraries and developers, which aims to provide a high quality workflow for Haxe developers.</p>
+<p>The kit offers a set of libraries, which can be used to create Haxe frameworks, applications and games. In this tutorial I'll cover the installation of the 3 core components of the functional set - flow, snow and luxe.</p>
+<p>Flow is a tool for building and managing Haxe projects. Snow is a toolkit for creating crossplatform apps and games on a low level. Finally, Luxe is a 2d game engine. The whole configuration can be compared to OpenFL as another means of creating cross-platform apps and games using Haxe.</p>
+<p>Of course, in order to use snowkit tools and libs, you need <a href="2_getting_started_with_haxe.html">to have Haxe installed</a>.</p>
+<p>Note that all of the components in snowkit are still under development, so future updates might change these steps a bit.</p><p>Firstly, you'll need to clone 3 git repositories. They're all hosted on GitHub, so go ahead and clone <a href="https://github.com/underscorediscovery/flow">Flow</a>, <a href="https://github.com/underscorediscovery/snow">Snow</a> and <a href="https://github.com/underscorediscovery/luxe">Luxe</a> to a local directory.</p>
+<p>When you have all of these downloaded, use haxelib to create a local library entry for each of the repositories.</p>
+<p>The command lines follow this pattern:</p>
+<pre><code>haxelib dev flow path/to/flow
+haxelib dev snow path/to/snow
+haxelib dev luxe path/to/luxe</code></pre>
+<p>If you're running Windows, you can Shift+Right Click in the parent directory of a library to open a command line with that path already open. This way, if your snow code is contained within a "snow" directory, the haxelib command to register that lib will be:</p>
+<pre><code>haxelib dev snow snow</code></pre>
+<p>Once that's set up, you can begin setting up your IDE for working with luxe engine.</p>
+<p>There are official plugins for <a href="https://underscorediscovery.github.io/flow/guide/sublimetext.html">Sublime Text</a> available, and there's also a template for <a href="https://underscorediscovery.github.io/flow/guide/flashdevelop.html">Flash Develop</a> that you can use.</p>
+<p>You can go ahead and create a new luxe engine project using any of the IDEs provided now. You can build and test the project using flow. Building a project is as simple as going to the directory of that project and running this command:</p>
+<pre><code>flow run</code></pre>
+<p>Alternatively, if you don't have the flow alias set up, you can use haxelib to access flow:</p>
+<pre><code>haxelib run flow run</code></pre>
+<p>You can also specify the targeted platform. I find that the "web" target compiles the fastest and is better for debugging.</p>
+<pre><code>haxelib run flow run web</code></pre>
+<p>Other platforms include windows, mac, linux, android and ios. Note that snow does not compile to Flash, the "web" platform in this case is JS based. Just like with OpenFL, you'll need specific software installed to be able to compile to native C++ targets (such as Visual Studio for Windows or XCode for Mac).</p>
+<p>If you're using Flash Develop, there's a shortcut that you can set up to be able to build luxe engine projects quickly by pressing Ctrl+Enter, instead of running the flow commands manually.</p>
+<p>Go to the projects properties window and Edit the "Run Custom Command" field. Enter the desirable command there:</p>
+<img alt="snowkit luxe engine Haxe" class="center" src="img/145.png">
+<p>It will now be executed every time once you press build the project.</p>
+<p>This should be enough to get coding, if you'd like to find out more about snowkit in detail, check out the <a href="http://snowkit.org/">official community page</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

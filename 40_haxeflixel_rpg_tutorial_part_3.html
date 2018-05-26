@@ -1,0 +1,146 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>40. HaxeFlixel RPG tutorial: Part 3</title></head><body><h1>40. HaxeFlixel RPG tutorial: Part 3</h1><h3>2014-10-11</h3><img class="thumb" alt="HaxeFlixel RPG tutorial camera" src="img/82.png">
+<p>Last time we added a map to our game, but only a small portion of it fits on the screen. Let's add a moveable camera this time.</p>
+<p>HaxeFlixel employs a special FlxCamera class, which displays a portion of the game world to the player. This class has a follow() method, which makes it automatically focus on and follow an entity, such as the player character.</p>
+<p>In this case I don't want the camera to follow a character. Instead, I want to be able to move the camera around with arrow keys or WASD as far as the map goes.</p>
+<p>For this purpose I will create an invisible object which the camera will follow; so we will actually move the invisible entity that the camera is following, and not the camera it self.</p><p>Start by going to the PlayState class and adding 5 new variables:</p>
+<pre><code class="haxe">static var LEVEL_WIDTH:Int = 50;
+static var LEVEL_HEIGHT:Int = 50;
+static var CAMERA_SPEED:Int = 8;
+private var camera:FlxCamera;
+private var cameraFocus:FlxSprite;
+</code></pre>
+<p>In the create() function we'll instantiate the cameraFocus object. We can use the built-in FlxSprite method makeGraphic() to make a dummy image for the entity. Create a transparent 1x1 rectangle:</p>
+<pre><code class="haxe">cameraFocus = new FlxSprite();
+cameraFocus.makeGraphic(1, 1, FlxColor.TRANSPARENT);
+add(cameraFocus);
+</code></pre>
+<p>Next we'll instantiate the camera itself. Use the follow() method to make the camera follow the entity around. There are several built-in following styles, defined using FlxCamera's static properties. In this case I'm using STYLE_LOCKON, which will always center the followed object.</p>
+<p>We can create a new camera, or use the default camera which already exists. Since we are covering the entire screen anyway, we can use the default camera.</p>
+<p>Note that if you're creating a brand new camera object, you'll need to add it to the FlxG.cameras array for it to be visible.</p>
+<pre><code class="haxe">camera = FlxG.camera;
+camera.follow(cameraFocus, FlxCamera.STYLE_LOCKON);
+</code></pre>
+<p>When that is done, go to the update() function, which is called once every frame, and add 4 if statements that move the invisible entity around.</p>
+<p>In HaxeFlixel, keyboard input can be detected using the FlxG.keys object very easily.</p>
+<pre><code class="haxe">// Camera movement
+if (FlxG.keys.anyPressed([&quot;DOWN&quot;, &quot;S&quot;])) {
+	cameraFocus.y += CAMERA_SPEED;
+}
+if (FlxG.keys.anyPressed([&quot;UP&quot;, &quot;W&quot;])) {
+	cameraFocus.y -= CAMERA_SPEED;
+}
+if (FlxG.keys.anyPressed([&quot;RIGHT&quot;, &quot;D&quot;])) {
+	cameraFocus.x += CAMERA_SPEED;
+}
+if (FlxG.keys.anyPressed([&quot;LEFT&quot;, &quot;A&quot;])) {
+	cameraFocus.x -= CAMERA_SPEED;
+}
+</code></pre>
+<p>With a bit of math, let's add the world bounds to our invisible cameraFocus object.</p>
+<pre><code class="haxe">// Camera bounds
+if (cameraFocus.x &lt; FlxG.width / 2) {
+	cameraFocus.x = FlxG.width / 2;
+}
+if (cameraFocus.x &gt; LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2) {
+	cameraFocus.x = LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2;
+}
+if (cameraFocus.y &lt; FlxG.height / 2) {
+	cameraFocus.y = FlxG.height / 2;
+}
+if (cameraFocus.y &gt; LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2) {
+	cameraFocus.y = LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2;
+}
+</code></pre>
+<p>Full PlayState.hx code:</p>
+<pre><code class="haxe">package ;
+
+import flixel.FlxCamera;
+import flixel.FlxG;
+import flixel.FlxSprite;
+import flixel.FlxState;
+import flixel.text.FlxText;
+import flixel.tile.FlxTilemap;
+import flixel.ui.FlxButton;
+import flixel.util.FlxColor;
+import flixel.util.FlxMath;
+import openfl.Assets;
+
+/**
+ * A FlxState which can be used for the actual gameplay.
+ */
+class PlayState extends FlxState
+{
+	private var tileMap:FlxTilemap;
+	static var TILE_WIDTH:Int = 16;
+	static var TILE_HEIGHT:Int = 16;
+	static var LEVEL_WIDTH:Int = 50;
+	static var LEVEL_HEIGHT:Int = 50;
+	static var CAMERA_SPEED:Int = 8;
+	private var camera:FlxCamera;
+	private var cameraFocus:FlxSprite;
+	/**
+	 * Function that is called up when to state is created to set it up.
+	 */
+	override public function create():Void
+	{
+		super.create();
+		
+		tileMap = new FlxTilemap();
+		tileMap.loadMap(Assets.getText(&quot;assets/data/map.csv&quot;), &quot;assets/images/tileset.png&quot;, TILE_WIDTH, TILE_HEIGHT, 0, 1);
+		add(tileMap);
+		
+		cameraFocus = new FlxSprite();
+		cameraFocus.makeGraphic(1, 1, FlxColor.TRANSPARENT);
+		add(cameraFocus);
+		
+		camera = FlxG.camera;
+		camera.follow(cameraFocus, FlxCamera.STYLE_LOCKON);
+	}
+
+	/**
+	 * Function that is called when this state is destroyed - you might want to
+	 * consider setting all objects this state uses to null to help garbage collection.
+	 */
+	override public function destroy():Void
+	{
+		super.destroy();
+	}
+
+	/**
+	 * Function that is called once every frame.
+	 */
+	override public function update():Void
+	{
+		super.update();
+		
+		// Camera movement
+		if (FlxG.keys.anyPressed([&quot;DOWN&quot;, &quot;S&quot;])) {
+			cameraFocus.y += CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;UP&quot;, &quot;W&quot;])) {
+			cameraFocus.y -= CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;RIGHT&quot;, &quot;D&quot;])) {
+			cameraFocus.x += CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;LEFT&quot;, &quot;A&quot;])) {
+			cameraFocus.x -= CAMERA_SPEED;
+		}
+		
+		// Camera bounds
+		if (cameraFocus.x &lt; FlxG.width / 2) {
+			cameraFocus.x = FlxG.width / 2;
+		}
+		if (cameraFocus.x &gt; LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2) {
+			cameraFocus.x = LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2;
+		}
+		if (cameraFocus.y &lt; FlxG.height / 2) {
+			cameraFocus.y = FlxG.height / 2;
+		}
+		if (cameraFocus.y &gt; LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2) {
+			cameraFocus.y = LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2;
+		}
+	}
+}</code></pre>
+<p>If you test the game now, you'll see that you're now able to move the camera around using WASD or arrow keys.</p>
+<p>We'll start <a href="41_haxeflixel_rpg_tutorial_part_4.html">implementing mouse based movement in the next part</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

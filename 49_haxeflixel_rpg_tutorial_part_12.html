@@ -1,0 +1,279 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>49. HaxeFlixel RPG tutorial: Part 12</title></head><body><h1>49. HaxeFlixel RPG tutorial: Part 12</h1><h3>2014-10-20</h3><img src="img/100.png" alt="HaxeFlixel RPG tutorial combat" class="thumb">
+<p>Last time we made the enemies begin chasing the player when they get too close. This time we'll begin implementing some basic combat mechanics to our RPG.</p>
+<p>When the enemy reaches the player and collides with them, both the player and the enemy should stop, and the combat starts.</p>
+<p>Today we'll implement a basic state machine, which has 2 states - a walking state and a combat state. Whenever the enemy touches the player which is in a walking state, the state changes to combat, and the player's character becomes unresponsive to any movement commands or collisions with other enemies.</p>
+<p>Start by going to Enemy.hx and adding a new condition to the following block:</p><pre><code class="haxe">if (tilemap.ray(startPoint, heroPoint) &amp;&amp; pathToHero.length &lt;= 5 &amp;&amp; hero.active) {
+	wanderTicks = 300;
+	path.start(this, pathToHero);
+}
+</code></pre>
+<p>This code is located in the update() function of Enemy.hx. The additional condition that I added checks whether the hero is "active" before starting the chase.</p>
+<p>The rest of the changes will be made in PlayState.hx.</p>
+<p>Go to PlayState.hx now and, before the declaration of the class, add a new enumartor:</p>
+<pre><code class="haxe">enum PlayerAction {
+	Walking;
+	Combat;
+}</code></pre>
+<p>Create a new variable in the PlayState class of the type PlayerAction.</p>
+<pre><code class="haxe">private var currentAction:PlayerAction;</code></pre>
+<p>Set it to Walking in the init() function. Also, set the "active" property of the hero to true.</p>
+<pre><code class="haxe">currentAction = Walking;
+hero.active = true;
+</code></pre>
+<p>Note that the "active" property is part of the FlxSprite class, we don't need to add it manually.</p>
+<p>Now go to the update() method and find the block that is responsible for handling mouse clicks. Add a new condition there, checking whether the currentAction is set to Walking:</p>
+<pre><code class="haxe">if (currentAction == Walking &amp;&amp; FlxG.mouse.justReleased){</code></pre>
+<p>Now add a new collision detection block, which loops through all enemies and checks their collision with the hero. In case of a collision, we want to call a method called onEnemyCollision:</p>
+<pre><code class="haxe">// Collisions
+FlxG.overlap(hero, potions, onPotionCollision);
+var i:Int;
+for (i in 0...enemies.length) {
+	FlxG.overlap(hero, enemies[i], onEnemyCollision);
+}
+</code></pre>
+<p>The function itself looks like this:</p>
+<pre><code class="haxe">private function onEnemyCollision(hero:FlxSprite, enemy:Enemy):Void {
+	if (enemy.exists &amp;&amp; hero.exists &amp;&amp; hero.active &amp;&amp; enemy.active) {
+		hero.active = false;
+		enemy.active = false;
+		currentAction = Combat;
+		startCombat();
+	}
+}
+</code></pre>
+<p>The function checks whether both of the objects exist and are active. These "active" values are then set to false, and currentAction is set to Combat.</p>
+<p>After this, no other enemy will start chasing the player, even if they are in the required vicinity. The player will not be able to move the player while in Combat mode, which is what we want.</p>
+<p>A startCombat() function is called, which currently does nothing:</p>
+<pre><code class="haxe">private function startCombat():Void {
+	trace(&quot;Combat starts&quot;);
+}
+</code></pre>
+<p>Here's the full code:</p>
+<pre><code class="haxe">package ;
+
+import flixel.FlxCamera;
+import flixel.FlxG;
+import flixel.FlxObject;
+import flixel.FlxSprite;
+import flixel.FlxState;
+import flixel.group.FlxTypedGroup;
+import flixel.tile.FlxTilemap;
+import flixel.util.FlxColor;
+import flixel.util.FlxPath;
+import flixel.util.FlxPoint;
+import openfl.Assets;
+
+enum PlayerAction {
+	Walking;
+	Combat;
+}
+
+/**
+ * A FlxState which can be used for the actual gameplay.
+ */
+class PlayState extends FlxState
+{
+	private var tileMap:FlxTilemap;
+	public static var TILE_WIDTH:Int = 16;
+	public static var TILE_HEIGHT:Int = 16;
+	public static var LEVEL_WIDTH:Int = 50;
+	public static var LEVEL_HEIGHT:Int = 50;
+	public static var CAMERA_SPEED:Int = 8;
+	private var camera:FlxCamera;
+	private var cameraFocus:FlxSprite;
+	private var movementMarker:FlxSprite;
+	public var hero:FlxSprite;
+	private var path:FlxPath;
+	private var hud:HUD;
+	private var potions:FlxTypedGroup&lt;Potion&gt;;
+	private var enemies:Array&lt;Enemy&gt;;
+	private var currentAction:PlayerAction;
+	
+	/**
+	 * Function that is called up when to state is created to set it up.
+	 */
+	override public function create():Void
+	{
+		super.create();
+
+		FlxG.worldBounds.width = TILE_WIDTH * LEVEL_WIDTH;
+		FlxG.worldBounds.height = TILE_HEIGHT * LEVEL_HEIGHT;
+		
+		tileMap = new FlxTilemap();
+		tileMap.loadMap(Assets.getText(&quot;assets/data/map.csv&quot;), &quot;assets/images/tileset.png&quot;, TILE_WIDTH, TILE_HEIGHT, 0, 1);
+		tileMap.setTileProperties(0, FlxObject.ANY);
+		tileMap.setTileProperties(1, FlxObject.ANY);
+		tileMap.setTileProperties(2, FlxObject.NONE);
+		add(tileMap);
+		
+		cameraFocus = new FlxSprite();
+		cameraFocus.makeGraphic(1, 1, FlxColor.TRANSPARENT);
+		add(cameraFocus);
+		
+		camera = FlxG.camera;
+		camera.follow(cameraFocus, FlxCamera.STYLE_LOCKON);
+		
+		movementMarker = new FlxSprite();
+		movementMarker.visible = false;
+		add(movementMarker);
+		
+		hero = new FlxSprite(TILE_WIDTH * 7, TILE_HEIGHT * 3);
+		hero.loadGraphic(&quot;assets/images/hero.png&quot;, true, TILE_WIDTH, TILE_HEIGHT);
+		hero.animation.add(&quot;down&quot;, [0, 1, 0, 2]);
+		hero.animation.add(&quot;up&quot;, [3, 4, 3, 5]);
+		hero.animation.add(&quot;right&quot;, [6, 7, 6, 8]);
+		hero.animation.add(&quot;left&quot;, [9, 10, 9, 11]);
+		add(hero);
+		
+		potions = new FlxTypedGroup&lt;Potion&gt;();
+		add(potions);
+		spawnPotion(5, 5);
+		spawnPotion(6, 5);
+		spawnPotion(3, 10);
+		spawnPotion(4, 10);
+		spawnPotion(1, 10);
+		
+		hero.animation.play(&quot;down&quot;);
+		path = new FlxPath();
+		
+		enemies = new Array&lt;Enemy&gt;();
+		addEnemy(10, 15);
+		addEnemy(12, 10);
+		addEnemy(15, 6);
+		addEnemy(20, 6);
+		addEnemy(12, 20);
+		
+		hud = new HUD();
+		add(hud);
+		
+		currentAction = Walking;
+		hero.active = true;
+	}
+	
+	private function spawnPotion(x:Int, y:Int):Void{
+		var potion:Potion = new Potion();
+		potion.x = x * TILE_WIDTH;
+		potion.y = y * TILE_HEIGHT;
+		potions.add(potion);
+	}
+	
+	private function addEnemy(x:Int, y:Int):Void {
+		var enemy:Enemy = new Enemy(tileMap, hero);
+		enemy.x = x * TILE_WIDTH;
+		enemy.y = y * TILE_HEIGHT;
+		enemies.push(enemy);
+		add(enemy);
+	}
+	
+	private function onPotionCollision(hero:FlxSprite, potion:Potion):Void {
+		if (potion.exists &amp;&amp; hero.exists) {
+			potion.kill();
+			hud.addHealth(1);
+		}
+	}
+	
+	private function onEnemyCollision(hero:FlxSprite, enemy:Enemy):Void {
+		if (enemy.exists &amp;&amp; hero.exists &amp;&amp; hero.active &amp;&amp; enemy.active) {
+			hero.active = false;
+			enemy.active = false;
+			currentAction = Combat;
+			startCombat();
+		}
+	}
+	
+	private function startCombat():Void {
+		trace(&quot;Combat starts&quot;);
+	}
+
+	/**
+	 * Function that is called when this state is destroyed - you might want to
+	 * consider setting all objects this state uses to null to help garbage collection.
+	 */
+	override public function destroy():Void
+	{
+		super.destroy();
+	}
+
+	/**
+	 * Function that is called once every frame.
+	 */
+	override public function update():Void
+	{
+		super.update();
+		
+		// Collisions
+		FlxG.overlap(hero, potions, onPotionCollision);
+		var i:Int;
+		for (i in 0...enemies.length) {
+			FlxG.overlap(hero, enemies[i], onEnemyCollision);
+		}
+		
+		// Animation
+		if (!path.finished &amp;&amp; path.nodes!=null) {
+			if (path.angle == 0 || path.angle == 45 || path.angle == -45) {
+				hero.animation.play(&quot;up&quot;);
+			}
+			if (path.angle == 180 || path.angle == -135 || path.angle == 135) {
+				hero.animation.play(&quot;down&quot;);
+			}
+			if (path.angle == 90) {
+				hero.animation.play(&quot;right&quot;);
+			}
+			if (path.angle == -90) {
+				hero.animation.play(&quot;left&quot;);
+			}
+		} else {
+			hero.animation.curAnim.curFrame = 0;
+			hero.animation.curAnim.stop();
+		}
+		
+		// Camera movement
+		if (FlxG.keys.anyPressed([&quot;DOWN&quot;, &quot;S&quot;])) {
+			cameraFocus.y += CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;UP&quot;, &quot;W&quot;])) {
+			cameraFocus.y -= CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;RIGHT&quot;, &quot;D&quot;])) {
+			cameraFocus.x += CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;LEFT&quot;, &quot;A&quot;])) {
+			cameraFocus.x -= CAMERA_SPEED;
+		}
+		
+		// Camera bounds
+		if (cameraFocus.x &lt; FlxG.width / 2) {
+			cameraFocus.x = FlxG.width / 2;
+		}
+		if (cameraFocus.x &gt; LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2) {
+			cameraFocus.x = LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2;
+		}
+		if (cameraFocus.y &lt; FlxG.height / 2) {
+			cameraFocus.y = FlxG.height / 2;
+		}
+		if (cameraFocus.y &gt; LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2) {
+			cameraFocus.y = LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2;
+		}
+		
+		// Mouse clicks
+		if (currentAction == Walking &amp;&amp; FlxG.mouse.justReleased){
+			var tileCoordX:Int = Math.floor(FlxG.mouse.x / TILE_WIDTH);
+			var tileCoordY:Int = Math.floor(FlxG.mouse.y / TILE_HEIGHT);
+			
+			movementMarker.visible = true;
+			if (tileMap.getTile(tileCoordX, tileCoordY) == 2) {
+				var nodes:Array&lt;FlxPoint&gt; = tileMap.findPath(FlxPoint.get(hero.x + TILE_WIDTH/2, hero.y + TILE_HEIGHT/2), FlxPoint.get(tileCoordX * TILE_WIDTH + TILE_WIDTH/2, tileCoordY * TILE_HEIGHT + TILE_HEIGHT/2));
+				if (nodes != null) {
+					path.start(hero, nodes);
+					movementMarker.loadGraphic(AssetPaths.marker_move__png, false, TILE_WIDTH, TILE_HEIGHT);
+				}else {
+					movementMarker.loadGraphic(AssetPaths.marker_stop__png, false, TILE_WIDTH, TILE_HEIGHT);
+				}
+			}else {
+				movementMarker.loadGraphic(AssetPaths.marker_stop__png, false, TILE_WIDTH, TILE_HEIGHT);
+			}
+			movementMarker.setPosition(tileCoordX * TILE_WIDTH, tileCoordY * TILE_HEIGHT);
+		}
+	}
+}</code></pre>
+<p>We'll <a href="50_haxeflixel_rpg_tutorial_part_13.html">continue in the next tutorial</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

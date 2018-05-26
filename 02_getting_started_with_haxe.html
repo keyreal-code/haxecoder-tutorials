@@ -1,0 +1,31 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>02. Getting started with Haxe</title></head><body><h1>02. Getting started with Haxe</h1><h3>2014-09-03</h3><img alt="Getting started" class="thumb" src="img/14.png"><p>To start developing in Haxe, a few things need to be made in preparation.</p>
+<p>The first and most obvious thing is to download and install the Haxe toolkit itself. But to be able to actually use it, you'll need an IDE (Integrated Development Environment), which is a tool for editing code, compiling and packaging your apps.</p>
+<p>There are several IDE with Haxe support that you can use.</p><p>You can find the official list of available editors <a href="http://haxe.org/documentation/introduction/editors-and-ides.html" target="_blank">here</a>.</p>
+<p>I personally use <a href="http://www.flashdevelop.org/" target="_blank">Flash Develop</a> and strongly recommend it. The editor is very light-weight, has a lot of useful and intuitive tools, and supports multiple languages natively, including Haxe.</p>
+<p>If you decide to use Flash Develop, you don't need to manually install Haxe. Otherwise, head to the <a href="http://haxe.org/download/" target="_blank">official Haxe download page</a> and grab and install the latest package.</p>
+<p>In case you're going with <a href="http://www.flashdevelop.org/" target="_blank">Flash Develop</a>, download and install it now.</p>
+<p>On first launch, Flash Develop will ask you what SDK to download. Here you can select Haxe and it will be downloaded and installed for you. If you miss this step, you can later go to the Tools menu in Flash Develop, select Install Software and find the SDK there.</p>
+<img alt="Haxe SDK installation in Flash Develop" src="img/11.png" class="center">
+<p>At this point you'll be able to create and compile pure Haxe projects. If you go to the Project menu and select New Project, you can see all the available options for Haxe projects.</p>
+<p>You'll notice a number of templates for different kinds of applications, among them you'll find a Neko Project template. Neko is a lightweight runtime made by the same guys who created Haxe. It is especially useful for debugging, since the compilation time is fast. Flash Develop may ask you specifically whether you want to install Neko together with Haxe, you should agree.</p>
+<img alt="Haxe project creation in Flash Develop" src="img/12.png" class="center">
+<p>Next thing, you'll need to install lime. Lime is an abstraction layer that makes cross-platform possible. It comes with lime tools which make it very easy to install new compilers and frameworks.</p>
+<p>Once you have Haxe and Neko installed, open your command prompt/terminal and run the following commands:</p>
+<pre><code>haxelib install lime
+haxelib run lime setup
+</code></pre>
+<p>As I mentioned in the <a href="1_what_is_haxe.html">first introductory post</a>, OpenFL is one of the most popular frameworks for Haxe, which provides an easy and powerful graphics API to work with. Let's install it too. This is very easily done using the command line:</p>
+<pre><code>lime install openfl
+</code></pre>
+<p>Done! Now you can go to Flash Develop, create a new OpenFL Project and test it. To run the project, find the build configuration bit in the toolbar and choose either flash, html5 or neko compiler targets.</p>
+<img alt="OpenFL project compilation" src="img/13.png" class="center">
+<p>If all was installed correctly, you'll end up with a blank application with black background. Congratulations!</p>
+<p>The other compiler targets, however, will not work yet. They all have to be installed first (using lime) and each of them has specific requirements.</p>
+<p>To be able to compile executable programs for Windows, for example, a compatible version of Visual Studio C++ has to be installed. Fortunately, lime makes most of these things as easy as possible, so you'll just have to run:</p>
+<pre><code>lime setup windows
+</code></pre>
+<p>The requirements, Visual Studio Express in this case, will be installed for you (there will be a prompt asking you whether you want to install it or not).</p>
+<p>Unfortunately, to be able to compile for Windows, you need to compile your program from a Windows machine. This applies to other platforms too - to be able to compile to Mac or IOs, you'll need to do it from a Mac and have XCode installed.</p>
+<p>For a full list of platforms and their requirements, you can <a href="http://www.openfl.org/documentation/setup/platforms/" target="_blank">look at the official OpenFL documentation</a>.</p>
+<p>You usually wouldn't debug using these compile targets, though. When debugging it is best to use the fastest compiler, which is either neko or flash.</p>
+<p>Now we have Haxe installed, an IDE to work in, and even the OpenFL framework to utilize. We're ready to delve into actual coding! You can explore the categories to find specific tutorials, or <a href="3_oop_in_haxe.html">move on to the next tutorial to learn about OOP syntax in Haxe</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

@@ -1,0 +1,38 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>69. Accordions in HaxeUI</title></head><body><h1>69. Accordions in HaxeUI</h1><h3>2014-11-17</h3><img alt="HaxeUI accordion" class="thumb" src="img/142.png">
+<p>Accordions are vertical menus that consist of panels which expand on click.</p>
+<p>In HaxeUI they are easily created in layout XML. Each child of the accordion is considered a separate panel, which displays all of its content when selected. Only one panel can be selected at a time.</p>
+<p>In the next example I'll create an accordion, consisting of 3 panels, where each panel has 3 buttons.</p>
+<p>I'll use the XML layout approach to create the accordion, so I suggest you check out the <a href="64_using_xml_layouts_in_haxeui.html">HaxeUI layout</a> tutorial first if you haven't.</p><p>Here's the XML file:</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
+&lt;accordion width=&quot;150&quot; height=&quot;300&quot; id=&quot;myAccordion&quot;&gt;
+	&lt;vbox text=&quot;Section 1&quot;&gt;
+		&lt;button text=&quot;Button 1&quot; /&gt;
+		&lt;button text=&quot;Button 2&quot; /&gt;
+		&lt;button text=&quot;Button 3&quot; /&gt;
+	&lt;/vbox&gt;
+	&lt;vbox text=&quot;Section 2&quot;&gt;
+		&lt;button text=&quot;Button 1&quot; /&gt;
+		&lt;button text=&quot;Button 2&quot; /&gt;
+		&lt;button text=&quot;Button 3&quot; /&gt;
+	&lt;/vbox&gt;
+	&lt;vbox text=&quot;Section 3&quot;&gt;
+		&lt;button text=&quot;Button 1&quot; /&gt;
+		&lt;button text=&quot;Button 2&quot; /&gt;
+		&lt;button text=&quot;Button 3&quot; /&gt;
+	&lt;/vbox&gt;
+&lt;/accordion&gt;</code></pre>
+<p>The layout is added to the root:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	root.addChild(view);
+});</code></pre>
+<p>This will produce an accordion with 3 buttons, labeled "Section 1", "Section 2" and "Section 3" respectively. Clicking one of them opens that panel, showing its contents.</p>
+<p>I gave the accordion node an id of "myAccordion", so I can refer to it in code.</p>
+<p>You can use this to select and open a panel programmatically. This can be done by selecting one of the buttons in the accordion and dispatching a click event on that button:</p>
+<pre><code class="haxe">var accordion:Accordion = root.findChild(&quot;myAccordion&quot;, Accordion);
+accordion.getButton(1).dispatchEvent(new UIEvent(UIEvent.CLICK));</code></pre>
+<p>You can use the selectedIndex property to get the index of the currently selected panel:</p>
+<pre><code class="haxe">trace(&quot;Selected index: &quot; + accordion.selectedIndex);</code></pre><footer>&copy; Kirill Poletaev</footer></body></html>

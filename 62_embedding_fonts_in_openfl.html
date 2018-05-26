@@ -1,0 +1,20 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>62. Embedding fonts in OpenFL</title></head><body><h1>62. Embedding fonts in OpenFL</h1><h3>2014-11-02</h3><img alt="OpenFL embed font" class="thumb" src="img/126.png">
+<p>There's a high chance that you'll want to use a custom font in your app or game, and it's one of those things that might take a bit of time to get working, so I wrote this short tutorial to demonstrate how to properly embed fonts in OpenFL.</p>
+<p>I'm going to be utilizing the Assets class to load the font itself and use it to render text in a TextField.</p>
+<p>Firstly, put your OTF or TTF font in the assets/fonts/ directory.</p>
+<p>Make sure the application.xml file has the path to the fonts directory by adding the following line (if it doesn't already exist):</p><pre><code class="xml">&lt;assets path=&quot;assets/fonts&quot; rename=&quot;fonts&quot; /&gt;</code></pre>
+<p>You don't really use the font on its own in an OpenFL application, but you apply it to a TextFormat instance which is later used to render fonts in TextFields.</p>
+<p>If you have multiple UI components that use the same font formatting, you'll want to reuse the existing TextFormat object. One way is to store these instances in static variables.</p>
+<p>For example, if you made a class called MenuButton and use it numerous times to add buttons to your application, you can define a common static TextFormat inside MenuButton:</p>
+<pre><code class="haxe">public static var MENU_BUTTON_FORMAT:TextFormat = new TextFormat(Assets.getFont("fonts/myFont.otf").fontName,
+ 	50, 0xffffff, null, null, null, null, null, TextFormatAlign.CENTER);</code></pre>
+<p>This way there will only be one TextFormat instance, which you can then reuse in all MenuButton objects.</p>
+<p>Note the first parameter of the TextFormat constructor - the value is the name of the actual font, which can be entered either as a String, or taken from the fontName property of the embedded font.</p>
+<p>You can later use this TextFormat instance as a default text format for a TextField:</p>
+<pre><code class="haxe">txt = new TextField();
+txt.defaultTextFormat = MENU_BUTTON_FORMAT;</code></pre>
+<p>This will make sure that all of the text that is added to this field in the future will use this format.</p>
+<p>You can also use the setTextFormat() method to use a font once - this way you can change the text format of a specific part of the text field, by specifying the beginning and ending character indices.</p>
+<pre><code class="haxe">txt.setTextFormat(MENU_BUTTON_FORMAT, 0, 5);</code></pre>
+<p>Similarly, you can get the text format that's used in the character range.</p>
+<pre><code class="haxe">txt.getTextFormat(0, 5);</code></pre><footer>&copy; Kirill Poletaev</footer></body></html>

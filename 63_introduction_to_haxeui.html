@@ -1,0 +1,34 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>63. Introduction to HaxeUI</title></head><body><h1>63. Introduction to HaxeUI</h1><h3>2014-11-03</h3><img alt="HaxeUI introduction button" class="thumb" src="img/127.png">
+<p>HaxeUI is an OpenFL-based UI library.</p>
+<p>You can use it in any OpenFL project to quickly add complex interface components to your application or game. All components are completely skinnable.</p>
+<p>In this tutorial I'll show you how to install the library and create a simple application with a button.</p>
+<p>Accomplishing this is actually not as obvious as it sounds, because HaxeUI components are not added directly to the display list using addChild(), but employ a Toolkit system which lets you create a number of "root" containers (usually just one) for drawing and managing all the UI controls.</p><p>To download HaxeUI, you can use haxelib.</p>
+<pre><code>haxelib install haxeui</code></pre>
+<p>Create an OpenFL project using the default template and add haxeui to the used libraries in application.xml:</p>
+<pre><code class="xml">&lt;haxelib name=&quot;haxeui&quot; /&gt;</code></pre>
+<p>Go to the init() function and initialize HaxeUI by calling a static init() function of the Toolkit class:</p>
+<pre><code class="haxe">Toolkit.init();</code></pre>
+<p>As I said above, you don't add UI controls to the display list - they are supposed to be added to a root, which is a core component (that I will cover in detail later) that is created asynchronously by the HaxeUI toolkit system.</p>
+<p>Usually, one root is enough for most applications. It is created using the static openFullscreen() method of the Toolkit class, and receives a function as the parameter, which is called asynchronously to create all the UI components.</p>
+<p>Example:</p>
+<pre><code class="haxe">Toolkit.openFullscreen(function(root:Root) {
+
+});
+</code></pre>
+<p>Adding UI controls is very straight forward.</p>
+<p>Without further ado, here's an example with a button and a click listener, which changes the button's label when it's clicked:</p>
+<pre><code class="haxe">Toolkit.openFullscreen(function(root:Root) {
+	var b:Button = new Button();
+	b.text = &quot;Test button&quot;;
+	b.x = 10;
+	b.y = 10;
+	root.addChild(b);
+	
+	b.addEventListener(UIEvent.CLICK, function(evt:UIEvent) {
+		evt.component.text = &quot;Clicked&quot;;
+	});
+});
+</code></pre>
+<p>You can see that I used the root object, which is passed as a parameter of the function, to add the button using the addChild() method.</p>
+<p>You can build your interface just like that - by adding components to the root programmatically.</p>
+<p>Another way is to store UI layouts in XML files. I'll cover that in the next tutorial.</p><footer>&copy; Kirill Poletaev</footer></body></html>

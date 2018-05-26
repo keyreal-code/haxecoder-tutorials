@@ -1,0 +1,103 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>48. HaxeFlixel RPG tutorial: Part 11</title></head><body><h1>48. HaxeFlixel RPG tutorial: Part 11</h1><h3>2014-10-19</h3><img alt="HaxeFlixel RPG tutorial enemies chasing" src="img/99.png" class="thumb">
+<p>We now have enemies that are aimlessly wandering around the map, and it's time to make them react to the character.</p>
+<p>An enemy should start chasing the character once they actually see him. This check actually consists of two conditions - there must be no solid blocks between the player and the enemy that would block the line of sight, and the distance between the player and the enemy needs to be reasonable.</p>
+<p>Both of these conditions can be checked using the FlxTilemap object's methods.</p>
+<p>First of all, go to the PlayState.hx class and pass the hero reference to all Enemy instances.</p><p>This is done in the addEnemy() method:</p>
+<pre><code class="haxe">var enemy:Enemy = new Enemy(tileMap, hero);</code></pre>
+<p>The rest of the changes are made in Enemy.hx, here's the full code:</p>
+<pre><code class="haxe">package ;
+import flixel.FlxSprite;
+import flixel.tile.FlxTilemap;
+import flixel.util.FlxPath;
+import flixel.util.FlxPoint;
+
+/**
+ * Enemy
+ * @author Kirill Poletaev
+ */
+class Enemy extends FlxSprite
+{
+	public var path:FlxPath;
+	private var wandering:Bool;
+	private var wanderTicks:Int;
+	private var nodes:Array&lt;FlxPoint&gt;;
+	private var tilemap:FlxTilemap;
+	private var hero:FlxSprite;
+
+	public function new(tilemap:FlxTilemap, hero:FlxSprite) 
+	{
+		super();
+		this.tilemap = tilemap;
+		this.hero = hero;
+		
+		loadGraphic(&quot;assets/images/enemy.png&quot;, true, PlayState.TILE_WIDTH, PlayState.TILE_HEIGHT);
+		animation.add(&quot;down&quot;, [0, 1, 0, 2]);
+		animation.add(&quot;up&quot;, [3, 4, 3, 5]);
+		animation.add(&quot;right&quot;, [6, 7, 6, 8]);
+		animation.add(&quot;left&quot;, [9, 10, 9, 11]);
+		
+		path = new FlxPath();
+		
+		animation.play(&quot;down&quot;);
+		
+		wandering = true;
+		wanderTicks = Std.int(Math.random() * 300);
+	}
+	
+	override public function update() {
+		super.update();
+		
+		if (wandering) {
+			var startPoint:FlxPoint = FlxPoint.get(x + PlayState.TILE_WIDTH / 2, y + PlayState.TILE_HEIGHT / 2);
+			var heroPoint:FlxPoint = FlxPoint.get(hero.x + PlayState.TILE_WIDTH / 2, hero.y + PlayState.TILE_HEIGHT / 2);
+			var pathToHero:Array&lt;FlxPoint&gt; = tilemap.findPath(startPoint, heroPoint, false);
+			
+			if (tilemap.ray(startPoint, heroPoint) &amp;&amp; pathToHero.length &lt;= 5) {
+				wanderTicks = 300;
+				path.start(this, pathToHero);
+			}
+			
+			if (wanderTicks &gt; 0) {
+				wanderTicks--;
+			} else {
+				wanderTicks = Std.int(Math.random() * 300);
+				while (nodes == null || nodes.length == 0) {
+					var tileCoordY:Int = Std.int(startPoint.y / PlayState.TILE_WIDTH + Math.ceil(Math.random()*6) - 3);
+					var tileCoordX:Int = Std.int(startPoint.x / PlayState.TILE_HEIGHT + Math.ceil(Math.random()*6) - 3);
+					var endPoint = FlxPoint.get(tileCoordX * PlayState.TILE_WIDTH + PlayState.TILE_WIDTH / 2, tileCoordY * PlayState.TILE_HEIGHT + PlayState.TILE_HEIGHT / 2);
+					nodes = tilemap.findPath(startPoint, endPoint);
+				}
+				path.start(this, nodes);
+			}
+		}
+		
+		if (!path.finished &amp;&amp; path.nodes != null) {
+			if (path.angle == 0 || path.angle == 45 || path.angle == -45) {
+				animation.play(&quot;up&quot;);
+			}
+			if (path.angle == 180 || path.angle == -135 || path.angle == 135) {
+				animation.play(&quot;down&quot;);
+			}
+			if (path.angle == 90) {
+				animation.play(&quot;right&quot;);
+			}
+			if (path.angle == -90) {
+				animation.play(&quot;left&quot;);
+			}
+		} else {
+			animation.curAnim.curFrame = 0;
+			animation.curAnim.stop();
+			nodes = null;
+		}	
+	}
+	
+}</code></pre>
+<p>Firstly, receive the hero reference and store it in a private variable.</p>
+<p>Now look at the update() function, specifically the block that is executed when "wandering" is true.</p>
+<p>The startPoint variable declaration has been moved to the top of this block, because it is going to be used more than once.</p>
+<p>Before handling the wandering ticker, we first use the startPoint and the calculated heroPoint values to find out whether this particular enemy sees the player's character.</p>
+<p>The first check is done using the FlxTilemap.ray() method, which returns true if there were no obstacles between the player and the enemy.</p>
+<p>The second check is done by first finding an actual path to the player, and then checking if the length of the points in that path is less than 5. Note that the third parameter of the findPath() method is set to false, which means that no path simplification is done, and even if the tiles are located in a straight line - they will all be listed in the array. This is important for accurate distance calculation.</p>
+<p>Finally, if both of these conditions are met, we set the wanderTicks to 300 (to prevent wandering if the enemy is chasing the player) and then use the FlxPath instance to make the enemy chase the hero.</p>
+<p>Now if you test the game, standing too close to an enemy will make them chase you.</p>
+<p>We'll start <a href="49_haxeflixel_rpg_tutorial_part_12.html">implementing combat in the next part</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

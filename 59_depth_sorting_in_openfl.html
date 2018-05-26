@@ -1,0 +1,56 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>59. Depth sorting in OpenFL</title></head><body><h1>59. Depth sorting in OpenFL</h1><h3>2014-10-30</h3><img alt="Depth sorting OpenFL" class="thumb" src="img/119.png">
+<p>In this tutorial I will show you how depth sorting works in OpenFL and how to sort Sprites based on their Y value.</p>
+<p>OpenFL employs a DispayList pattern which people coming from AS3 will be familiar with.</p>
+<p>All Sprites added using the addChild() method to a container (which is also visible) are sorted by their indices, which are set automatically when you add new Sprites.</p>
+<p>Each newly added Sprite is placed on top of everything else, with its index being the biggest. Indices in OpenFL can be swapped and set explicitly using various methods.</p><p>Take a look at the following example:</p>
+<pre><code class="haxe">red = new Sprite();
+red.graphics.beginFill(0xff0000);
+red.graphics.drawRect(0, 0, 100, 100);
+red.graphics.endFill();
+
+blue = new Sprite();
+blue.graphics.beginFill(0x0000ff);
+blue.graphics.drawRect(0, 0, 100, 100);
+blue.graphics.endFill();
+
+blue.y = 50;
+blue.x = 50;
+
+addChild(red);
+addChild(blue);
+</code></pre>
+<img alt="Depth sorting OpenFL" class="center" src="img/119.png">
+<p>Since the blue sprite was created the last, it is placed on top of the first one.</p>
+<p>You can explicitly set a child's index using setChildIndex() method of the parent. In this case we take the red sprite and put it on top:</p>
+<pre><code class="haxe">this.setChildIndex(red, this.numChildren - 1);</code></pre>
+<img alt="Depth sorting OpenFL" class="center" src="img/120.png">
+<p>The same can be achieved by swapping the indices of the two children:</p>
+<pre><code class="haxe">this.swapChildren(red, blue);</code></pre>
+<p>2D games with some sort of perspective often sort the depth of the children by their Y coordinate. To achieve this, first create a new array of Sprites:</p>
+<pre><code class="haxe">var sortableChildren:Array&lt;Sprite&gt;;</code></pre>
+<p>Add all the children that you want to sort to this array. I also add an animation using Actuate to demonstrate the depth sorting in real time.</p>
+<pre><code class="haxe">Actuate.tween(red, 1, { y: 100 }, true).repeat( -1).reflect(true).ease(Quad.easeInOut);
+
+sortableChildren = new Array&lt;Sprite&gt;();
+sortableChildren.push(red);
+sortableChildren.push(blue);
+</code></pre>
+<p>I want to update the depth sorting every frame so I add a new listener:</p>
+<pre><code class="haxe">addEventListener(Event.ENTER_FRAME, update);</code></pre>
+<p>And simply sort all the items inside sortableChildren by their Y coordinate. I needed to write a custom sorting function for this.</p>
+<pre><code class="haxe">private function update(e:Event):Void {
+	sortableChildren.sort(sortByY);
+	var i:Int;
+	for (i in 0...sortableChildren.length) {
+		setChildIndex(sortableChildren[i], i);
+	}
+}
+
+private function sortByY(a:Sprite, b:Sprite):Int {
+	if (a.y == b.y) return 0;
+	if (a.y &gt; b.y) return 1;
+	return -1;
+}
+</code></pre>
+<img alt="Depth sorting OpenFL" class="center" src="img/121.gif">
+<p>Easy!</p><footer>&copy; Kirill Poletaev</footer></body></html>

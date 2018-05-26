@@ -1,0 +1,48 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>65. IDs and Event listeners in HaxeUI</title></head><body><h1>65. IDs and Event listeners in HaxeUI</h1><h3>2014-11-07</h3><img alt="IDs Event listeners in HaxeUI" class="thumb" src="img/129.png">
+<p>In the <a href="64_using_xml_layouts_in_haxeui.html">previous tutorial</a> I showed how to use XML layouts to create interfaces using HaxeUI.</p>
+<p>The controls we added through XML don't do much on their own, but their functionality can be added as soon as we get actual access to the elements we've created. This is done similarly to HTML - through the use of IDs.</p>
+<p>Let's create a new layout which has a VBox container with multiple children, two of which have IDs set.</p>
+<p>You can update the existing code from <a href="64_using_xml_layouts_in_haxeui.html">previous tutorial</a>. Update the mainLayout.xml file to look like this:</p><pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
+&lt;vbox width=&quot;150&quot;&gt;
+	&lt;divider text=&quot;Divider&quot; /&gt;
+	&lt;button text=&quot;Button with a listener&quot; id=&quot;myButton&quot; width=&quot;100%&quot; /&gt;
+	&lt;text text=&quot;Text field&quot; id=&quot;myText&quot; width=&quot;100%&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+	&lt;button text=&quot;Button&quot; width=&quot;100%&quot; /&gt;
+&lt;/vbox&gt;</code></pre>
+<p>As you can see, there's a button with an id "myButton" and a text field with an id "myText", which we can use to access these elements. Go to Main.hx and update the bit function that loads and displays the layout.</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	root.addChild(view);
+	
+	var vbox:VBox = root.findChildAs(VBox);
+});</code></pre>
+<p>The findChildAs() method takes a class as its argument and finds the first child in the container that has that specific type. This way we resolve the vbox container.</p>
+<p>We can then go further and find the required button and text field using their IDs:</p>
+<pre><code class="haxe">var button:Button = vbox.findChild("myButton", Button);
+var text:Text = vbox.findChild("myText", Text);
+</code></pre>
+<p>The findChild() method will find the direct child of the container using an ID and a class.</p>
+<p>We can avoid the need to resolve the direct container of a child (the VBox in this case) by passing "true" as a third parameter to the findChild() method, which searches for the child recursively.</p>
+<pre><code class="haxe">Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	root.addChild(view);
+	
+	var button:Button = root.findChild(&quot;myButton&quot;, Button, true);
+	var text:Text = root.findChild(&quot;myText&quot;, Text, true);
+});
+</code></pre>
+<p>Event listeners can be added to the elements using the addEventListener() method or using special properties of the object. For example, here are two ways to set a click listener to the button, which will update the text field when handled:</p>
+<pre><code class="haxe">button.onClick = function (e:UIEvent) {
+		text.text = &quot;Clicked!&quot;;
+	}
+	
+button.addEventListener(UIEvent.CLICK, function (e:UIEvent) {
+		text.text = &quot;Clicked!&quot;;
+	});
+</code></pre><footer>&copy; Kirill Poletaev</footer></body></html>

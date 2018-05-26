@@ -1,0 +1,163 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>21. Tile based game tutorial using Haxe and OpenFL: Part 4</title></head><body><h1>21. Tile based game tutorial using Haxe and OpenFL: Part 4</h1><h3>2014-09-22</h3><img src="img/44.png" alt="Tile based animation Haxe OpenFL" class="thumb">
+<p>So far we have a controllable character with basic walking animation implementation.</p>
+<p>By basic I mean that we can animate through a preset sequence of frames, and stop the animation when needed. Our animation system right now plays one animation frame per one rendering frame (i.e. draw call). No matter how fast you gotta go, this is just too fast.</p>
+<p>This can be fixed by adding 1 more feature to the animation logic - delays between animation frames. The delays can be specified in two units - actual time (seconds) or rendering frames (i.e. draw calls). Today we'll implement the latter.</p><p>Before we move on, however, we need to address the code re-usability issue.</p>
+<p>Until now our animation logic was small enough to be considered the inner logic of the PlayerCharacter object. It's obvious now that we're going to extend the animation system.</p>
+<p>In a tile-based game, if our character is animated, how likely is it that other future entities will have to be animated in a similar way?</p>
+<p>Very likely.</p>
+<p>How annoying would it be to rewrite the same animation logic every time for each entity, even though they only differ slightly?</p>
+<p>Pretty annoying. Not to mention all the new opportunities for errors.</p>
+<p>This is why I'll be moving the whole animation code into a new class AnimationStepper, which can later be accessed by a common interface and be used in different entities for different purposes.</p>
+<p>The AnimationStepper class will be fed an array of frame values, as well as the delay between animated frames in rendering frames (draw calls). The instance will then handle all the stepping and stopping logic, circulating through the provided frame values.</p>
+<p>Whenever we need to find out what animation frame should be displayed right now, we'll call this object's getFrame() method.</p>
+<p>Here's the full AnimationStepper.hx code, which I will explain in a bit:</p>
+<pre><code class="haxe">package ;
+
+/**
+ * Handling of frame animation.
+ * @author Kirill Poletaev
+ */
+class AnimationStepper
+{
+	public var frames:Array&lt;Int&gt;;
+	public var frameDelay:Int;
+	
+	private var step:Int;
+	private var frameCounter:Int;
+
+	public function new(frames:Array&lt;Int&gt;, frameDelay:Int) 
+	{
+		this.frames = frames;
+		this.frameDelay = frameDelay;
+		step = 0;
+		frameCounter = 0;
+	}
+	
+	public function reset():Void {
+		step = 0;
+		frameCounter = 0;
+	}
+	
+	public function animate():Void {
+		if (frameCounter &gt;= 0) {
+			frameCounter = -frameDelay;
+			step++;
+			if (step == frames.length) {
+				step = 0;
+			}
+		}else {
+			frameCounter++;
+		}
+	}
+	
+	public function getFrame():Int {
+		return frames[step];
+	}
+	
+}</code></pre>
+<p>As you can see, we pass 2 values to the constructor, as planned - the array of frame values and the delay between frames. The rest code should be familiar if you followed my previous tutorial, because this logic was taken from the PlayerCharacter class. What's new is the frameCounter variable, along with its associated wrapper code in animate().</p>
+<p>Whenever the animate() method is called, we increase the frameCounter value by 1. As soon as the counter hits 0 (the starting value is a negative number), we increase the step value by 1 and move to the next animation frame from the array.</p>
+<p>This way, if our delay is set to 5 frames, for example, then the animate() method will only increase the "step" value every 5 rendering frames (i.e. every 5 draw calls).</p>
+<p>If we go back to our PlayerCharacter class, we can simplify the code a lot by removing all the existing animation logic and replacing it with the usage of the new AnimationStepper class.</p>
+<p>Instead of initializing all the animation related variables, simply create an instance of the new class:</p>
+<pre><code class="haxe">walkAnimStepper = new AnimationStepper([0, 1, 0, 2], 5);</code></pre>
+<p>The resetAnim() and animate() methods become much simpler too:</p>
+<pre><code class="haxe">public function resetAnim():Void {
+	walkAnimStepper.reset();
+}
+
+public function animate():Void {
+	walkAnimStepper.animate();
+}
+</code></pre>
+<p>Finally, the draw() method now uses the getFrame() method of the AnimationStepper to find out which frame to pass to the draw call:</p>
+<pre><code class="haxe">override public function draw():Array&lt;Float&gt; {
+	var tile:Int = direction[walkAnimStepper.getFrame()];
+	return [position.x, position.y, tile];
+}
+</code></pre>
+<p>The full PlayerCharacter.hx code ends up looking like this:</p>
+<pre><code class="haxe">package ;
+import openfl.display.Tilesheet;
+import openfl.geom.Point;
+import openfl.geom.Rectangle;
+
+/**
+ * Player character's entity.
+ * @author Kirill Poletaev
+ */
+enum Direction {
+	Left;
+	Right;
+	Up;
+	Down;
+}
+ 
+class PlayerCharacter extends TileEntity
+{
+	private var faceDown:Array&lt;Int&gt;;
+	private var faceUp:Array&lt;Int&gt;;
+	private var faceRight:Array&lt;Int&gt;;
+	private var faceLeft:Array&lt;Int&gt;;
+	
+	public var position:Point;
+	private var direction:Array&lt;Int&gt;;
+	
+	public var movementSpeed:Int;
+	private var walkAnimStepper:AnimationStepper;
+
+	public function new(tilesheet:Tilesheet) 
+	{
+		faceDown = new Array&lt;Int&gt;();
+		faceUp = new Array&lt;Int&gt;();
+		faceRight = new Array&lt;Int&gt;();
+		faceLeft = new Array&lt;Int&gt;();
+		
+		faceDown.push(tilesheet.addTileRect(new Rectangle(0, 32, 32, 32)));
+		faceDown.push(tilesheet.addTileRect(new Rectangle(32, 32, 32, 32)));
+		faceDown.push(tilesheet.addTileRect(new Rectangle(64, 32, 32, 32)));
+		
+		faceUp.push(tilesheet.addTileRect(new Rectangle(0, 64, 32, 32)));
+		faceUp.push(tilesheet.addTileRect(new Rectangle(32, 64, 32, 32)));
+		faceUp.push(tilesheet.addTileRect(new Rectangle(64, 64, 32, 32)));
+		
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(0, 96, 32, 32)));
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(32, 96, 32, 32)));
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(64, 96, 32, 32)));
+		
+		faceRight.push(tilesheet.addTileRect(new Rectangle(0, 128, 32, 32)));
+		faceRight.push(tilesheet.addTileRect(new Rectangle(32, 128, 32, 32)));
+		faceRight.push(tilesheet.addTileRect(new Rectangle(64, 128, 32, 32)));
+		
+		position = new Point(128, 128);
+		direction = faceDown;
+		movementSpeed = 3;
+		
+		walkAnimStepper = new AnimationStepper([0, 1, 0, 2], 5);
+	}
+	
+	override public function draw():Array&lt;Float&gt; {
+		var tile:Int = direction[walkAnimStepper.getFrame()];
+		return [position.x, position.y, tile];
+	}
+	
+	public function face(dir:Direction):Void {
+		switch(dir) {
+			case Up: direction = faceUp;
+			case Down: direction = faceDown;
+			case Right: direction = faceRight;
+			case Left: direction = faceLeft;
+		}
+	}
+	
+	public function resetAnim():Void {
+		walkAnimStepper.reset();
+	}
+	
+	public function animate():Void {
+		walkAnimStepper.animate();
+	}
+	
+}</code></pre>
+<p>The best part, of course, is that we can use the AnimationStepper class in any entity we want. Simple things are nice.</p>
+<p>In the next part we'll <a href="22_tile_based_game_tutorial_using_haxe_and_openfl_part_5.html">work on tile collision</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

@@ -1,0 +1,50 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>12. Keyboard events in Haxe using OpenFL</title></head><body><h1>12. Keyboard events in Haxe using OpenFL</h1><h3>2014-09-13</h3><img class="thumb" src="img/29.png" alt="Keyboard events in Haxe using OpenFL">
+<p>OpenFL does many things, and keyboard event management is one of them. Keyboard input detection is widely used in game development, but can also be used in applications for things like key shortcuts.</p>
+<p>The API provided by OpenFL for keyboard event handling is similar to AS3. If you read my <a href="9_how_to_make_a_pong_game_in_haxe_and_openfl_part_3.html">Pong game tutorial</a>, you already know that all we need to do is add a listener to the stage object and listen for a keyboard event.</p>
+<p>In this tutorial I'll explain the base mechanism for keyboard input detection, share common patterns, and show a trick to easily detect whether a key is currently held down or not.</p><p>The first step to set up keyboard input detection is to add keyboard listeners. The listeners are added to the stage object, and are usually added in the init() function:</p>
+<pre><code class="haxe">stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
+</code></pre>
+<p>As you can see, I added listeners for 2 keyboard events - KEY_DOWN and KEY_UP. The first event is dispatched when the user presses a key, and the second - when the key is released.</p>
+<p>The KEY_DOWN event will be dispatched once, as soon as the key is pressed, and after a short period of time defined by the system (around 1 second), the event will start being dispatched every frame until the key is released.</p>
+<p>The function handlers receive a KeyboardEvent object as a parameter. The event object contains multiple useful properties. In this example, we'll trace the charCode and keyCode values when the key is pressed:</p>
+<pre><code class="haxe">private function onKeyDown(evt:KeyboardEvent):Void {
+	trace("Char code: " + evt.charCode);
+	trace("Key code: " + evt.keyCode);
+}
+</code></pre>
+<p>The charCode property contains the numeric value of the Unicode character that is pressed. The keyCode value represents the numeric value of the key that is pressed. Usually, keyCode is used for most purposes.</p>
+<p>For creating hotkey shortcuts you'll often want to detect combinations of regular keys and functional keys, such as Alt or Ctrl.</p>
+<p>There are 3 properties in a KeyboardEvent object that you can use for detecting such combinations.</p>
+<p>The altKey property will return true if the Alt key is pressed on Windows, or the Option key is pressed on Mac OS. Otherwise, it will return false.</p>
+<p>The shiftKey property will return true if the Shift key is pressed, false if it isn't.</p>
+<p>The ctrlKey property will indicate whether the Ctrl key is pressed on Windows or Linux, or whether the Ctrl or Command key is pressed on Mac OS. Otherwise it's false.</p>
+<p>Often you'll also want to detect when a key is being held down. The classic approach is to store the hold-down value for each key in a Bool variable, such as isKeyUpDown, and set this value to true on a KEY_DOWN event and to false on KEY_UP. However, this way you'll end up with a lot of variables, if statements and switch cases.</p>
+<p>Here's a simple trick to detect when any key is being held down using just 1 array variable.</p>
+<p>Declare an Array of Bool values:</p>
+<pre><code class="haxe">private var keys:Array<Bool>;</code></pre>
+<p>Set the array to an empty array in init() and add 2 keyboard listeners:</p>
+<pre><code class="haxe">keys = [];
+stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);</code></pre>
+<p>In the event handlers change the value of the element in the array, which has the index of the same value as the keyCode being pressed:</p>
+<pre><code class="haxe">private function onKeyDown(evt:KeyboardEvent):Void {
+	keys[evt.keyCode] = true;
+}
+
+private function onKeyUp(evt:KeyboardEvent):Void {
+	keys[evt.keyCode] = false;
+}
+</code></pre>
+<p>And done. You can now test any key for being held down like this:</p>
+<pre><code class="haxe">if (keys[38]) {
+	trace("Arrow key UP is held!");
+}
+</code></pre>
+<p>Simple as that!</p>
+<p>It can, however, get even more simple, if you use the constants provided by the Keyboard class. These constants hold the keyCode values of just about every key on your keyboard.</p>
+<pre><code class="haxe">if (keys[Keyboard.UP]) {
+	trace("Arrow key UP is held!");
+}
+</code></pre>
+<p>If you found this helpful, you are welcome to check out my other tutorials.</p><footer>&copy; Kirill Poletaev</footer></body></html>

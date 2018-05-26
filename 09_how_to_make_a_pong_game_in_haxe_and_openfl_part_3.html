@@ -1,0 +1,239 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>09. How to make a Pong game in Haxe and OpenFL: Part 3</title></head><body><h1>09. How to make a Pong game in Haxe and OpenFL: Part 3</h1><h3>2014-09-10</h3><img src="img/23.png" class="thumb" alt="Haxe OpenFL Pong game">
+<p>In this part we'll be creating a game loop and adding player-controller platform movement using arrow keys.</p>
+<p>Our current keyboard event listener only handles KEY_DOWN events. For things like movement, you will usually want to move the object as long as the key is down, and stop the movement once the key is released.</p>
+<p>This means that we will need to listen to both KEY_DOWN and KEY_UP events to add the "hold key to move" functionality. For this purpose, add 2 new variables:</p><pre><code class="haxe">private var arrowKeyUp:Bool;
+private var arrowKeyDown:Bool;</code></pre>
+<p>These values will be true as long as the keys are held, and false when they're not.</p>
+<p>Add another variable, which will represent the movement speed of a platform:</p>
+<pre><code class="haxe">private var platformSpeed:Int;</code></pre>
+<p>Go to your init() function and set the default values to these variables. False for both booleans, and a numeric value for the speed, 7 in my case:</p>
+<pre><code class="haxe">arrowKeyUp = false;
+arrowKeyDown = false;
+platformSpeed = 7;</code></pre>
+<p>Add a new event listener to the end of init() function, this time listen to KEY_UP instead of KEY_DOWN:</p>
+<pre><code class="haxe">stage.addEventListener(KeyboardEvent.KEY_UP, keyUp);</code></pre>
+<p>Now let's update our existing keyDown event handler. We want to listen to 2 keys here - arrow up and arrow down. The key codes are 38 and 40 respectively. When we capture these key presses, we want to set the respective boolean values to true:</p>
+<pre><code class="haxe">private function keyDown(event:KeyboardEvent):Void {
+	if (currentGameState == Paused && event.keyCode == 32) { // Space
+		setGameState(Playing);
+	}else if (event.keyCode == 38) { // Up
+		arrowKeyUp = true;
+	}else if (event.keyCode == 40) { // Down
+		arrowKeyDown = true;
+	}
+}
+</code></pre>
+<p>Create a similar listener for key up event, listen to these two keys and set booleans to false:</p>
+<pre><code class="haxe">private function keyUp(event:KeyboardEvent):Void {
+	if (event.keyCode == 38) { // Up
+		arrowKeyUp = false;
+	}else if (event.keyCode == 40) { // Down
+		arrowKeyDown = false;
+	}
+}
+</code></pre>
+
+<p>A game loop is a function that is executed regularly to update game logic or graphics. With OpenFL, it is easy to just listen to an ENTER_FRAME event of a Sprite, which is called every frame. The frame rate (FPS) is set in application.xml file and is 60 by default in FlashDevelop.</p>
+<p>Add a new event listener in the init() function. This time add the listener to the Main instance, instead of the stage. Use the "this" keyword for that:</p>
+<pre><code class="haxe">this.addEventListener(Event.ENTER_FRAME, everyFrame);</code></pre>
+<p>In the event handler function we want to first check whether the game state is Playing. If that's true, then check whether an arrow key is pressed, by looking at the boolean values. When the up key is pressed, decrease the y coordinate of the platform by your movement speed. If the down key is pressed, increase the coordinate instead.</p>
+<p>This means that if, for example, your platform's movement speed is set to 7, the platform will move 7 pixels per frame up or down as long as a key is held.</p>
+<p>We also want to add limits to how far can the platform go, this is done using simple if statements. We end up with something like this:</p>
+<pre><code class="haxe">private function everyFrame(event:Event):Void {
+	if(currentGameState == Playing){
+		if (arrowKeyUp) {
+			platform1.y -= platformSpeed;
+		}
+		if (arrowKeyDown) {
+			platform1.y += platformSpeed;
+		}
+		if (platform1.y &lt; 5) platform1.y = 5;
+		if (platform1.y &gt; 395) platform1.y = 395;
+	}
+}
+</code></pre>
+<p>Let's also update our setGameState() function by adding lines that will reset the platforms' vertical location:</p>
+<pre><code class="haxe">private function setGameState(state:GameState):Void {
+	currentGameState = state;
+	updateScore();
+	if (state == Paused) {
+		messageField.alpha = 1;
+	}else {
+		messageField.alpha = 0;
+		platform1.y = 200;
+		platform2.y = 200;
+	}
+}
+</code></pre>
+<p>When that's done, if you run the game, you'll be able to move one platform using the up and down arrow keys after the game is started.</p>
+<img src="img/24.png" class="center" alt="Haxe OpenFL Pong game">
+<p>The full Main.hx code should look like this:</p>
+<pre><code class="haxe">package ;
+
+import openfl.display.Sprite;
+import openfl.events.Event;
+import openfl.Lib;
+import openfl.events.KeyboardEvent;
+import openfl.text.TextField;
+import openfl.text.TextFormat;
+import openfl.text.TextFormatAlign;
+
+enum GameState {
+	Paused;
+	Playing;
+}
+
+class Main extends Sprite 
+{
+	var inited:Bool;
+	
+	private var platform1:Platform;
+	private var platform2:Platform;
+	private var ball:Ball;
+	private var scorePlayer:Int;
+	private var scoreAI:Int;
+	private var scoreField:TextField;
+	private var messageField:TextField;
+	private var currentGameState:GameState;
+	private var arrowKeyUp:Bool;
+	private var arrowKeyDown:Bool;
+	private var platformSpeed:Int;
+
+	/* ENTRY POINT */
+	
+	function resize(e) 
+	{
+		if (!inited) init();
+		// else (resize or orientation change)
+	}
+	
+	function init() 
+	{
+		if (inited) return;
+		inited = true;
+		
+		platform1 = new Platform();
+		platform1.x = 5;
+		platform1.y = 200;
+		this.addChild(platform1);
+		
+		platform2 = new Platform();
+		platform2.x = 480;
+		platform2.y = 200;
+		this.addChild(platform2);
+		
+		ball = new Ball();
+		ball.x = 250;
+		ball.y = 250;
+		this.addChild(ball);
+		
+		var scoreFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 24, 0xbbbbbb, true);
+		scoreFormat.align = TextFormatAlign.CENTER;
+		
+		scoreField = new TextField();
+		addChild(scoreField);
+		scoreField.width = 500;
+		scoreField.y = 30;
+		scoreField.defaultTextFormat = scoreFormat;
+		scoreField.selectable = false;
+		
+		var messageFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 18, 0xbbbbbb, true);
+		messageFormat.align = TextFormatAlign.CENTER;
+		
+		messageField = new TextField();
+		addChild(messageField);
+		messageField.width = 500;
+		messageField.y = 450;
+		messageField.defaultTextFormat = messageFormat;
+		messageField.selectable = false;
+		messageField.text = &quot;Press SPACE to start\nUse ARROW KEYS to move your platform&quot;;
+		
+		scorePlayer = 0;
+		scoreAI = 0;
+		arrowKeyUp = false;
+		arrowKeyDown = false;
+		platformSpeed = 7;
+		setGameState(Paused);
+		
+		stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
+		stage.addEventListener(KeyboardEvent.KEY_UP, keyUp);
+		this.addEventListener(Event.ENTER_FRAME, everyFrame);
+	}
+	
+	private function setGameState(state:GameState):Void {
+		currentGameState = state;
+		updateScore();
+		if (state == Paused) {
+			messageField.alpha = 1;
+		}else {
+			messageField.alpha = 0;
+			platform1.y = 200;
+			platform2.y = 200;
+		}
+	}
+	
+	private function keyDown(event:KeyboardEvent):Void {
+		if (currentGameState == Paused &amp;&amp; event.keyCode == 32) { // Space
+			setGameState(Playing);
+		}else if (event.keyCode == 38) { // Up
+			arrowKeyUp = true;
+		}else if (event.keyCode == 40) { // Down
+			arrowKeyDown = true;
+		}
+	}
+	
+	private function keyUp(event:KeyboardEvent):Void {
+		if (event.keyCode == 38) { // Up
+			arrowKeyUp = false;
+		}else if (event.keyCode == 40) { // Down
+			arrowKeyDown = false;
+		}
+	}
+	
+	private function everyFrame(event:Event):Void {
+		if(currentGameState == Playing){
+			if (arrowKeyUp) {
+				platform1.y -= platformSpeed;
+			}
+			if (arrowKeyDown) {
+				platform1.y += platformSpeed;
+			}
+			if (platform1.y &lt; 5) platform1.y = 5;
+			if (platform1.y &gt; 395) platform1.y = 395;
+		}
+	}
+	
+	private function updateScore():Void {
+		scoreField.text = scorePlayer + &quot;:&quot; + scoreAI;
+	}
+
+	/* SETUP */
+
+	public function new() 
+	{
+		super();	
+		addEventListener(Event.ADDED_TO_STAGE, added);
+	}
+
+	function added(e) 
+	{
+		removeEventListener(Event.ADDED_TO_STAGE, added);
+		stage.addEventListener(Event.RESIZE, resize);
+		#if ios
+		haxe.Timer.delay(init, 100); // iOS 6
+		#else
+		init();
+		#end
+	}
+	
+	public static function main() 
+	{
+		// static entry point
+		Lib.current.stage.align = openfl.display.StageAlign.TOP_LEFT;
+		Lib.current.stage.scaleMode = openfl.display.StageScaleMode.NO_SCALE;
+		Lib.current.addChild(new Main());
+		//
+	}
+}
+</code></pre>
+<p>Next time we will <a href="10_how_to_make_a_pong_game_in_haxe_and_openfl_part_4.html">add ball movement</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

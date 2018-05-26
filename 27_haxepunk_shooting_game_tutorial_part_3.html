@@ -1,0 +1,119 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>27. HaxePunk shooting game tutorial: Part 3</title></head><body><h1>27. HaxePunk shooting game tutorial: Part 3</h1><h3>2014-09-28</h3><img alt="HaxePunk shooter game tutorial" class="thumb" src="img/60.png">
+<p>It's time to add destroyable enemies to our game.</p>
+<p>Each enemy is an entity with a random speed and spawn position, moving downwards until they are shot down or until they exit the screen.</p>
+<p>The whole enemy spawn handling is not a part of the PlayerShip logic, so the code will go in the MainScene.hx class.</p>
+<p>We'll need to handle random spawning, movement, and collision with the player's bullets.</p>
+<p>Let's first go to the Bullet.hx class and add a few things which will help us implement collision detection.</p><p>In HaxePunk, collidable Entities need to have a hitbox. This is a simple rectangle which determines the collidable area of this Entity.</p>
+<p>We can also give all our Bullets a common type "bullet", so that we can check collision of enemy ships with all bullets.</p>
+<p>Here's the full Bullet.hx code:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+
+/**
+ * Bullet entity.s
+ * @author Kirill Poletaev
+ */
+class Bullet extends Entity
+{
+
+	public function new(g:Dynamic) 
+	{
+		super();
+		graphic = g;
+		type = &quot;bullet&quot;;
+		setHitbox(14, 24, 0, 0);
+	}
+	
+	override public function update() {
+		this.y -= 12;
+		if (this.y &lt; -50) {
+			scene.remove(this);
+		}
+	}
+	
+}</code></pre>
+<p>The next step is to add the enemy spawning logic to the MainScene.hx class.</p>
+<p>Full code:</p>
+<pre><code class="haxe">import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	private var spawnInterval:Int;
+	private var enemyGraphic:Image;
+	
+	public function new()
+	{
+		super();
+		Input.define(&quot;up&quot;, [Key.UP, Key.W]);
+		Input.define(&quot;down&quot;, [Key.DOWN, Key.S]);
+		Input.define(&quot;left&quot;, [Key.LEFT, Key.A]);
+		Input.define(&quot;right&quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&quot;atlas/atlas.xml&quot;);
+		enemyGraphic = new Image(atlas.getRegion(&quot;enemyShip&quot;));
+		
+		player = new PlayerShip(atlas);
+		add(player);
+		spawnInterval = Math.round(Math.random() * 50)+50;
+	}
+	
+	override public function update() {
+		super.update();
+		spawnInterval--;
+		if (spawnInterval == 0) {
+			var enemy = new EnemyShip(enemyGraphic);
+			add(enemy);
+			enemy.x = Math.round(Math.random() * (HXP.width-64));
+			enemy.y = -50;
+			spawnInterval = Math.round(Math.random() * 20)+30;
+		}
+	}
+	  
+ }</code></pre>
+<p>As you can see, we added 2 variables - one for storing graphical data for all enemy ships, one for handling the delay between enemy spawns. Every few frames we create a new EnemyShip entity, and here is its code:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.HXP;
+
+/**
+ * Enemy ship entity.
+ * @author Kirill Poletaev
+ */
+class EnemyShip extends Entity
+{
+	private var speed:Int;
+
+	public function new(g:Dynamic) 
+	{
+		super();
+		graphic = g;
+		speed = Math.ceil(Math.random() * 3);
+		setHitbox(64, 48, 0, 0);
+	}
+	
+	override public function update() {
+		this.y += speed;
+		if (this.y &gt; HXP.height) {
+			scene.remove(this);
+		}
+		var collidedEntity = collide(&quot;bullet&quot;, x, y);
+		if (collidedEntity != null) {
+			scene.remove(this);
+			scene.remove(collidedEntity);
+		}
+	}
+	
+}</code></pre>
+<p>As you can see, it's an Entity subclass which receives a graphic value in the constructor as the only parameter, generates a random speed value, and moves downwards every frame.</p>
+<p>It is important to set the hitbox value for this entity, since we are going to check for collisions in the update() method.</p>
+<p>If the Entity goes off screen, remove it. If it collides with any Entity with the type "bullet", remove this ship and that bullet.</p>
+<p>If you test your game now, you'll be able to shoot down the incoming enemy spaceship fleet.</p>
+<img alt="HaxePunk shooter game tutorial enemies" class="center" src="img/61.png">
+<p>There are still a lot of things missing from our game, such as healthbars, score, particles and sounds.</p>
+<p>We'll add <a href="28_haxepunk_shooting_game_tutorial_part_4.html">enemy health and explosion particles in the next tutorial</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

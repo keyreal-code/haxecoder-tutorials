@@ -1,0 +1,77 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>72. JSON in Haxe: Parsing, encoding, replacing</title></head><body><h1>72. JSON in Haxe: Parsing, encoding, replacing</h1><h3>2015-05-06</h3><img alt="JSON in Haxe" class="thumb" src="img/147.png">
+<p>JSON (JavaScript Object Notation) is a widely used language-independent lightweight data format that's used both for storing and interchanging data between applications.</p>
+<p>Haxe includes built-in tools for parsing and encoding data in JSON format, which I'm going to cover in this tutorial.</p>
+<p>JSON is a text format, so raw data is first loaded into a String object, which is then parsed by the haxe.Json class to produce a Dynamic object. If you already know what the structure of the JSON is going to be, you can produce a custom typed object instead.</p>
+<p>Take a look at the example below:</p><p>First I create a simple JSON string, in this case it's an object with two properties, one of which is a String, and one of which is an Array of Strings.</p>
+<pre><code>var string:String = '{&quot;date&quot;: &quot;2015-05-06&quot;, &quot;food&quot;:[&quot;bacon&quot;, &quot;tomatoes&quot;, &quot;apples&quot;]}';
+</pre></code>
+<p>Make sure you import the Json class before moving to the next step:</p>
+<pre><code>import haxe.Json;</pre></code>
+<p>Let's try parsing this string into a Dynamic object. For the record - a Dynamic object has no set structure and can have any value of any type assigned to it. Our JSON can be parsed using the Json.parse() method:</p>
+<pre><code>var object:Dynamic = Json.parse(string);
+trace(&quot;Object: &quot; + object);
+trace(&quot;Date: &quot; + object.date);
+trace(&quot;Food: &quot; + object.food);
+trace(&quot;First element: &quot; + object.food[0]);
+</pre></code>
+<p>Tracing will output the following values:</p>
+<pre><code>Object: { date =&gt; 2015-05-06, food =&gt; [bacon,tomatoes,apples] }
+Date: 2015-05-06
+Food: [bacon,tomatoes,apples]
+First element: bacon</pre></code>
+<p>Great, we've parsed our data and can now access it like a regular Haxe object.</p>
+<p>As I already said, this produces a Dynamic object, which may be convenient but not always the best solution. Whenever possible, it is best to type all of your objects. If we know the exact structure of our received JSON data, we can create a custom type for it.</p>
+<pre><code>typedef ShoppingList = {
+	var date:String;
+	var food:Array&lt;String&gt;;
+}</pre></code>
+<p>Now I will use the same parse() method as before, except assign the returned value to a ShoppingList typed variable:</p>
+<pre><code>var list:ShoppingList = Json.parse(string);
+trace(&quot;Shopping list: &quot; + list);
+trace(&quot;Date: &quot; + list.date);
+trace(&quot;Food: &quot; + list.food);
+trace(&quot;First element: &quot; + list.food[0]);
+</pre></code>
+<p>The output will be the same:</p>
+<pre><code>Object: { date =&gt; 2015-05-06, food =&gt; [bacon,tomatoes,apples] }
+Date: 2015-05-06
+Food: [bacon,tomatoes,apples]
+First element: bacon</pre></code>
+<p>This is a better approach because the compiler knows about the expected object structure and will attempt to optimize generated code.</p>
+<p>To turn an object into a JSON String, you can use the stringify() method:</p>
+<pre><code>trace(Json.stringify(list));</pre></code>
+<p>This will return the same JSON String that we had before the parsing:</p>
+<pre><code>{&quot;date&quot;:&quot;2015-05-06&quot;,&quot;food&quot;:[&quot;bacon&quot;,&quot;tomatoes&quot;,&quot;apples&quot;]}
+</pre></code>
+<p>You can pretty-print the output by assigning a value to the third parameter of the stringify() method - space. The entered string value will be used as indentation when printing hierarchy-like JSON structure:</p>
+<pre><code>trace(Json.stringify(list, null, &quot; &quot;));</pre></code>
+<p>The output has the same content but now looks readable:</p>
+<pre><code>{
+ &quot;date&quot;: &quot;2015-05-06&quot;,
+ &quot;food&quot;: [
+  &quot;bacon&quot;,
+  &quot;tomatoes&quot;,
+  &quot;apples&quot;
+ ]
+}</pre></code>
+<p>The second parameter of the stringify() method is a replacer function, which lets you customize the encoding process. The function receives a key-value pair that was supposed to be encoded into the object, and returns the value that will replace the initially offered value.</p>
+<p>A replacer function can look like this:</p>
+<pre><code>	private function replacer(key:Dynamic, value:Dynamic):Dynamic {
+		if (key == &quot;date&quot;) {
+			return Date.now().toString();
+		}
+		return value;
+	}</pre></code>
+<p>Pass it to the stringify() method as the second argument:</p>
+<pre><code>trace(Json.stringify(list, replacer, &quot; &quot;));</pre></code>
+<p>As a result of this example, we will end up with a JSON object which has its date field set to current time.</p>
+<pre><code>{
+ &quot;date&quot;: &quot;2015-05-06 18:55:43&quot;,
+ &quot;food&quot;: [
+  &quot;bacon&quot;,
+  &quot;tomatoes&quot;,
+  &quot;apples&quot;
+ ]
+}</pre></code>
+<p>Note that the raw JSON has to strictly follow the proper JSON format.</p>
+<p>If you need a more tolerant JSON parser, take a look at the <a href="https://github.com/martamius/TJSON" target="_blank">TJSON library on GitHub</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

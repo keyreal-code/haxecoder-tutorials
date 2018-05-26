@@ -1,0 +1,388 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>20. Tile based game tutorial using Haxe and OpenFL: Part 3</title></head><body><h1>20. Tile based game tutorial using Haxe and OpenFL: Part 3</h1><h3>2014-09-21</h3><img src="img/43.png" alt="Tile based game Haxe OpenFL" class="thumb">
+<p>In this part we separate the static terrain rendering from dynamic entity rendering. We also add character animation and movement.</p>
+<p>Let's start by going to the existing PlayerCharacter class and adding a few methods that will later be used to animate our character.</p>
+<p>So far we have movement animations in 4 directions, each consisting of 3 frames. In the actual game, I want to use an animation sequence of 4 frames, where the first frame is used twice. The sequence would be: 1, 2, 1, 3 and repeat.</p>
+<p>To add this functionality, we need to introduce a new variable - an array of frame indices from the movement animation arrays.</p><pre><code class="haxe">private var walkingAnimation:Array&lt;Int&gt;;</code></pre>
+<p>While we're here, change the access flag of the position object from private to public:</p>
+<pre><code class="haxe">public var position:Point;</code></pre>
+<p>And add a new variable for movement speed:</p>
+<pre><code class="haxe">public var movementSpeed:Int;</code></pre>
+<p>Set values to both of the new variables in the constructor. The array needs to contain the sequence of frames to use in the animation. Remember that we're referring to an array of tile IDs, and their indices start from 0:</p>
+<pre><code class="haxe">walkingAnimation = [0, 1, 0, 2];
+movementSpeed = 3;
+</code></pre>
+<p>Since we introduced a new walkingAnimation array, the "step" value no longer represents the actual frame to display, but the current index of walkingAnimation. Because of this we need to update our draw() method:</p>
+<pre><code class="haxe">override public function draw():Array&lt;Float&gt; {
+	var tile:Int = direction[walkingAnimation[step]];
+	return [position.x, position.y, tile];
+}
+</code></pre>
+<p>Add 2 new methods for controlling the animation - resetAnim() and animate(), which manipulate the step value. Basically, the first function would set the step value to 0, and the second would increment it by 1, until the step value reaches the length of our walkingAnimation array. In that case we create a loop by setting it back to 0.</p>
+<pre><code class="haxe">public function resetAnim():Void {
+	step = 0;
+}
+
+public function animate():Void {
+	step++;
+	if (step == walkingAnimation.length) {
+		step = 0;
+	}
+}
+</code></pre>
+<p>Let's also add support for facing 4 directions. Firstly, create an enum in this file with 4 values representing each movement direction:</p>
+<pre><code class="haxe">enum Direction {
+	Left;
+	Right;
+	Up;
+	Down;
+}</code></pre>
+<p>Do you remember the purpose of the "direction" array variable? It refers to the animation array which corresponds to the current movement direction. Create a method which lets us change this direction based on the parameter:</p>
+<pre><code class="haxe">public function face(dir:Direction):Void {
+	switch(dir) {
+		case Up: direction = faceUp;
+		case Down: direction = faceDown;
+		case Right: direction = faceRight;
+		case Left: direction = faceLeft;
+	}
+}
+</code></pre>
+<p>The PlayerCharacter.hx file looks like this now:</p>
+<pre><code class="haxe">package ;
+import openfl.display.Tilesheet;
+import openfl.geom.Point;
+import openfl.geom.Rectangle;
+
+/**
+ * Player character's entity.
+ * @author Kirill Poletaev
+ */
+enum Direction {
+	Left;
+	Right;
+	Up;
+	Down;
+}
+ 
+class PlayerCharacter extends TileEntity
+{
+	private var faceDown:Array&lt;Int&gt;;
+	private var faceUp:Array&lt;Int&gt;;
+	private var faceRight:Array&lt;Int&gt;;
+	private var faceLeft:Array&lt;Int&gt;;
+	
+	public var position:Point;
+	private var direction:Array&lt;Int&gt;;
+	private var step:Int;
+	private var walkingAnimation:Array&lt;Int&gt;;
+	
+	public var movementSpeed:Int;
+
+	public function new(tilesheet:Tilesheet) 
+	{
+		faceDown = new Array&lt;Int&gt;();
+		faceUp = new Array&lt;Int&gt;();
+		faceRight = new Array&lt;Int&gt;();
+		faceLeft = new Array&lt;Int&gt;();
+		
+		faceDown.push(tilesheet.addTileRect(new Rectangle(0, 32, 32, 32)));
+		faceDown.push(tilesheet.addTileRect(new Rectangle(32, 32, 32, 32)));
+		faceDown.push(tilesheet.addTileRect(new Rectangle(64, 32, 32, 32)));
+		
+		faceUp.push(tilesheet.addTileRect(new Rectangle(0, 64, 32, 32)));
+		faceUp.push(tilesheet.addTileRect(new Rectangle(32, 64, 32, 32)));
+		faceUp.push(tilesheet.addTileRect(new Rectangle(64, 64, 32, 32)));
+		
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(0, 96, 32, 32)));
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(32, 96, 32, 32)));
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(64, 96, 32, 32)));
+		
+		faceRight.push(tilesheet.addTileRect(new Rectangle(0, 128, 32, 32)));
+		faceRight.push(tilesheet.addTileRect(new Rectangle(32, 128, 32, 32)));
+		faceRight.push(tilesheet.addTileRect(new Rectangle(64, 128, 32, 32)));
+		
+		position = new Point(128, 128);
+		direction = faceDown;
+		step = 0;
+		walkingAnimation = [0, 1, 0, 2];
+		movementSpeed = 3;
+	}
+	
+	override public function draw():Array&lt;Float&gt; {
+		var tile:Int = direction[walkingAnimation[step]];
+		return [position.x, position.y, tile];
+	}
+	
+	public function face(dir:Direction):Void {
+		switch(dir) {
+			case Up: direction = faceUp;
+			case Down: direction = faceDown;
+			case Right: direction = faceRight;
+			case Left: direction = faceLeft;
+		}
+	}
+	
+	public function resetAnim():Void {
+		step = 0;
+	}
+	
+	public function animate():Void {
+		step++;
+		if (step == walkingAnimation.length) {
+			step = 0;
+		}
+	}
+	
+}</code></pre>
+<p>Now move to Main.hx.</p>
+<p>We have to do a number of things here. Firstly, we'll add keyboard listeners to handle movement using arrow keys. Secondly, we'll separate entity from terrain rendering for performance. Thirdly, we'll make the character move when an arrow key is held.</p>
+<p>Keyboard events were covered in <a href="page.php?id=19">this tutorial</a>. Based on that, let's create a key holding detection system. Introduce a new array:</p>
+<pre><code class="haxe">private var keysHeld:Array&lt;Bool&gt;;</code></pre>
+<p>Add the necessary listeners in the init() function:</p>
+<pre><code class="haxe">// Keyboard
+keysHeld = new Array&lt;Bool&gt;();
+stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
+stage.addEventListener(KeyboardEvent.KEY_UP, keyUp);
+</code></pre>
+<p>The handlers:</p>
+<pre><code class="haxe">private function keyDown(evt:KeyboardEvent):Void {
+	keysHeld[evt.keyCode] = true;
+}
+
+private function keyUp(evt:KeyboardEvent):Void {
+	keysHeld[evt.keyCode] = false;
+}
+</code></pre>
+<p>The keyboard input detection is done, we can now see whether a key is pressed by using its keyCode as an index of the keysHeld array.</p>
+<p>We are now going to change how our Tilesheet rendering works. Right now both the static terrain tiles and the dynamic entities are drawn on the same tilesheetCanvas object. This means that all terrain tiles are re-drawn every frame, even though they do not change by definition. We can potentially improve performance by adding 2 different canvas objects instead of 1. We'll then draw the terrain tiles only once, while the entities can be redrawn on every frame.</p>
+<p>Remove the tilesheetCanvas variable and add these two instead:</p>
+<pre><code class="haxe">private var terrainCanvas:Sprite;
+private var entitiesCanvas:Sprite;
+</code></pre>
+<p>Initialize them in init():</p>
+<pre><code class="haxe">terrainCanvas = new Sprite();
+addChild(terrainCanvas);
+entitiesCanvas = new Sprite();
+addChild(entitiesCanvas);
+</code></pre>
+<p>As soon as we have tile map data, we can draw it once by calling the drawTerrain() method:</p>
+<pre><code class="haxe">// Map data
+tileSize = 32;
+map = new Array&lt;Array&lt;Int&gt;&gt;();
+TileMap.create(map);
+drawTerrain();
+</code></pre>
+<p>Rendering logic for entities and terrain is split into two different functions - drawTerrain() and drawEntities():</p>
+<pre><code class="haxe">private function drawEntities():Void {
+	var tileData:Array&lt;Float&gt; = [];
+	
+	// Entities
+	for (entity in entities) {
+		tileData = tileData.concat(entity.draw());
+	}
+	
+	entitiesCanvas.graphics.clear();
+	tilesheet.drawTiles(entitiesCanvas.graphics, tileData);
+}
+
+private function drawTerrain():Void {
+	var tileData:Array&lt;Float&gt; = [];
+	
+	// Terrain
+	for (row in 0...map.length) {
+		for (cell in 0...map[row].length) {
+			tileData = tileData.concat([tileSize * cell, tileSize * row, map[row][cell]]);
+		}
+	}
+	
+	tilesheet.drawTiles(terrainCanvas.graphics, tileData);
+}
+</code></pre>
+<p>Terrain is drawn once. Entities are drawn every frame, so call the drawEntities() method in everyFrame handler.</p>
+<p>We'll also add an if statement chain to the everyFrame handler, which will listen to arrow key presses and make the character move in that direction. Use the methods we added today to achieve this:</p>
+<pre><code class="haxe">private function everyFrame(evt:Event):Void {
+	// Character walking
+	if (keysHeld[38]) {
+		character.face(Up);
+		character.animate();
+		character.position.y -= character.movementSpeed;
+	} else if (keysHeld[39]) {
+		character.face(Right);
+		character.animate();
+		character.position.x += character.movementSpeed;
+	} else if (keysHeld[40]) {
+		character.face(Down);
+		character.animate();
+		character.position.y += character.movementSpeed;
+	} else if (keysHeld[37]) {
+		character.face(Left);
+		character.animate();
+		character.position.x -= character.movementSpeed;
+	}else {
+		character.resetAnim();
+	}
+	
+	drawEntities();
+}
+</code></pre>
+<p>Here's the full code for Main.hx:</p>
+<pre><code class="haxe">package ;
+
+import flash.display.BitmapData;
+import flash.display.Sprite;
+import flash.events.Event;
+import flash.Lib;
+import openfl.Assets;
+import openfl.display.Tilesheet;
+import openfl.events.KeyboardEvent;
+import openfl.geom.Rectangle;
+
+/**
+ * Tile based game.
+ * @author Kirill Poletaev
+ */
+
+class Main extends Sprite 
+{
+	private var inited:Bool;
+	private var terrainCanvas:Sprite;
+	private var entitiesCanvas:Sprite;
+	private var tilesheet:Tilesheet;
+	private var map:Array&lt;Array&lt;Int&gt;&gt;;
+	private var tileSize:Int;
+	private var entities:Array&lt;TileEntity&gt;;
+	private var character:PlayerCharacter;
+	private var keysHeld:Array&lt;Bool&gt;;
+
+	/* ENTRY POINT */
+	
+	function resize(e) 
+	{
+		if (!inited) init();
+		// else (resize or orientation change)
+	}
+	
+	function init() 
+	{
+		if (inited) return;
+		inited = true;
+		
+		// Tilesheet initialization
+		var tilesBitmapData:BitmapData = Assets.getBitmapData(&quot;img/set.png&quot;);
+		terrainCanvas = new Sprite();
+		addChild(terrainCanvas);
+		entitiesCanvas = new Sprite();
+		addChild(entitiesCanvas);
+		tilesheet = new Tilesheet(tilesBitmapData);
+		tilesheet.addTileRect(new Rectangle(0, 0, 32, 32));
+		tilesheet.addTileRect(new Rectangle(32, 0, 32, 32));
+		
+		// Entities
+		entities = new Array&lt;TileEntity&gt;();
+		
+		// Player character creation
+		character = new PlayerCharacter(tilesheet);
+		entities.push(character);
+		
+		// Map data
+		tileSize = 32;
+		map = new Array&lt;Array&lt;Int&gt;&gt;();
+		TileMap.create(map);
+		drawTerrain();
+		
+		// Game loop
+		stage.addEventListener(Event.ENTER_FRAME, everyFrame);
+		
+		// Keyboard
+		keysHeld = new Array&lt;Bool&gt;();
+		stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
+		stage.addEventListener(KeyboardEvent.KEY_UP, keyUp);
+	}
+	
+	private function everyFrame(evt:Event):Void {
+		// Character walking
+		if (keysHeld[38]) {
+			character.face(Up);
+			character.animate();
+			character.position.y -= character.movementSpeed;
+		} else if (keysHeld[39]) {
+			character.face(Right);
+			character.animate();
+			character.position.x += character.movementSpeed;
+		} else if (keysHeld[40]) {
+			character.face(Down);
+			character.animate();
+			character.position.y += character.movementSpeed;
+		} else if (keysHeld[37]) {
+			character.face(Left);
+			character.animate();
+			character.position.x -= character.movementSpeed;
+		}else {
+			character.resetAnim();
+		}
+		
+		drawEntities();
+	}
+	
+	private function drawEntities():Void {
+		var tileData:Array&lt;Float&gt; = [];
+		
+		// Entities
+		for (entity in entities) {
+			tileData = tileData.concat(entity.draw());
+		}
+		
+		entitiesCanvas.graphics.clear();
+		tilesheet.drawTiles(entitiesCanvas.graphics, tileData);
+	}
+	
+	private function drawTerrain():Void {
+		var tileData:Array&lt;Float&gt; = [];
+		
+		// Terrain
+		for (row in 0...map.length) {
+			for (cell in 0...map[row].length) {
+				tileData = tileData.concat([tileSize * cell, tileSize * row, map[row][cell]]);
+			}
+		}
+		
+		tilesheet.drawTiles(terrainCanvas.graphics, tileData);
+	}
+	
+	private function keyDown(evt:KeyboardEvent):Void {
+		keysHeld[evt.keyCode] = true;
+	}
+	
+	private function keyUp(evt:KeyboardEvent):Void {
+		keysHeld[evt.keyCode] = false;
+	}
+
+	/* SETUP */
+
+	public function new() 
+	{
+		super();	
+		addEventListener(Event.ADDED_TO_STAGE, added);
+	}
+
+	function added(e) 
+	{
+		removeEventListener(Event.ADDED_TO_STAGE, added);
+		stage.addEventListener(Event.RESIZE, resize);
+		#if ios
+		haxe.Timer.delay(init, 100); // iOS 6
+		#else
+		init();
+		#end
+	}
+	
+	public static function main() 
+	{
+		// static entry point
+		Lib.current.stage.align = flash.display.StageAlign.TOP_LEFT;
+		Lib.current.stage.scaleMode = flash.display.StageScaleMode.NO_SCALE;
+		Lib.current.addChild(new Main());
+	}
+}
+</code></pre>
+<p>If you run the game, you can now move the character using arrow keys. The character will face the right direction and play an animation when he's walking, and reset it when he's standing.</p>
+<p>You may notice that the character's animation is too fast. We will fix that in <a href="21_tile_based_game_tutorial_using_haxe_and_openfl_part_4.html">the next part of the tutorial series</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

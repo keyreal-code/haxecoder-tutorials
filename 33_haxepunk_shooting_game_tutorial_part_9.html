@@ -1,0 +1,199 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>33. HaxePunk shooting game tutorial: Part 9</title></head><body><h1>33. HaxePunk shooting game tutorial: Part 9</h1><h3>2014-10-04</h3><img src="img/68.png" class="thumb" alt="HaxePunk shooting game tutorial">
+<p>In this part we'll make it possible to lose and restart the game.</p>
+<p>There's already a working life counter mechanism, and we're going to use that to determine when the game needs to end - when the player has no lives remaining.</p>
+<p>When the player loses, their ship explodes and they can restart the game by pressing Enter.</p>
+<p>Let's begin by updating our LifeCounter.hx class and adding a simple if statement, which checks if the life count has dropped to zero. When that happens, call the gameOver() method of the MainScene object.</p><p>Here's the updated LifeCounter.hx code:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.Text;
+
+/**
+ * Player life counter.
+ * @author Kirill Poletaev
+ */
+class LifeCounter extends Entity
+{
+	private var lives:Int;
+	private var txt:Text;
+
+	public function new(icon:Dynamic) 
+	{
+		super();
+		lives = 0;
+		layer = -4;
+		
+		txt = new Text(&quot;&quot;, 30);
+		txt.color = 0xff0000;
+		txt.size = 24;
+		
+		addGraphic(icon);
+		addGraphic(txt);
+		
+		updateLives(3);
+	}
+	
+	public function updateLives(num:Int):Void {
+		lives += num;
+		txt.text = lives + &quot;&quot;;
+		if (lives == 0) {
+			cast(scene, MainScene).gameOver();
+		}
+	}
+	
+}</code></pre>
+<p>When the player loses his ship, we need to show them a message that the game is over and they can press Enter to restart.</p>
+<p>Create a GameOverScreen.hx class that does this:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.Text;
+import com.haxepunk.HXP;
+import openfl.text.TextFormatAlign;
+
+/**
+ * Game over message.
+ * @author Kirill Poletaev
+ */
+class GameOverScreen extends Entity
+{
+	private var txt:Text;
+
+	public function new() 
+	{
+		super();
+		layer = -5;
+		txt = new Text(&quot;Press ENTER to restart&quot;, 0, HXP.height / 2 - 50, HXP.width);
+		txt.size = 32;
+		txt.align = TextFormatAlign.CENTER;
+		txt.y = HXP.height / 2 - 50;
+		graphic = txt;
+	}
+	
+}</code></pre>
+<p>It is also needed to update the Score.hx class by adding a new reset() method, which sets the score to 0:</p>
+<pre><code class="haxe">public function reset() {
+	points = 0;
+	score.text = &quot;Score: &quot; + points;
+}
+</code></pre>
+<p>Finally, we need to put all of this functionality together in the scene class.</p>
+<p>Here's the full code of MainScene.hx, which I will explain in a bit:</p>
+<pre><code class="haxe">package ;
+
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	private var spawnInterval:Int;
+	private var enemyGraphic:Image;
+	private var explosion:Explosion;
+	private var score:Score;
+	private var paused:Bool;
+	private var pausedText:PausedText;
+	private var lifeCounter:LifeCounter;
+	private var playing:Bool;
+	private var gameOverScreen:GameOverScreen;
+	
+	public function new()
+	{
+		super();
+		Input.define(&quot;up&quot;, [Key.UP, Key.W]);
+		Input.define(&quot;down&quot;, [Key.DOWN, Key.S]);
+		Input.define(&quot;left&quot;, [Key.LEFT, Key.A]);
+		Input.define(&quot;right&quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&quot;atlas/atlas.xml&quot;);
+		enemyGraphic = new Image(atlas.getRegion(&quot;enemyShip&quot;));
+		
+		player = new PlayerShip(atlas);
+		add(player);
+		spawnInterval = Math.round(Math.random() * 50) + 50;
+		
+		explosion = new Explosion(atlas);
+		add(explosion);
+		
+		score = new Score();
+		add(score);
+		
+		paused = false;
+		pausedText = new PausedText();
+		add(pausedText);
+		pausedText.visible = false;
+		
+		lifeCounter = new LifeCounter(new Image(atlas.getRegion(&quot;heart&quot;)));
+		add(lifeCounter);
+		lifeCounter.moveTo(10, 10);
+		
+		playing = true;
+		gameOverScreen = new GameOverScreen();
+		add(gameOverScreen);
+		gameOverScreen.visible = false;
+	}
+	
+	override public function update() {	
+		if (Input.pressed(Key.P)) {
+			togglePause();
+		}
+		
+		if (paused) return;
+		
+		super.update();
+		
+		if (!playing &amp;&amp; Input.pressed(Key.ENTER)) {
+			restart();
+		}
+		
+		if (!playing) return;
+		
+		spawnInterval--;
+		if (spawnInterval == 0) {
+			var enemy = new EnemyShip(enemyGraphic, explosion, score, lifeCounter);
+			add(enemy);
+			enemy.x = Math.round(Math.random() * (HXP.width-64));
+			enemy.y = -50;
+			spawnInterval = Math.round(Math.random() * 20)+30;
+		}
+	}
+	
+	public function togglePause() {
+		paused = !paused;
+		pausedText.visible = !pausedText.visible;
+	}
+	
+	public function gameOver() {
+		playing = false;
+		var i:Int;
+		for(i in 0...30){
+			explosion.explode(player.x, player.y);
+		}
+		player.active = false;
+		player.collidable = false;
+		player.visible = false;
+		gameOverScreen.visible = true;
+	}
+	
+	public function restart() {
+		playing = true;
+		player.active = true;
+		player.collidable = true;
+		player.visible = true;
+		lifeCounter.updateLives(3);
+		player.x = HXP.width/2 - player.width/2;
+		player.y = HXP.height - 80;
+		gameOverScreen.visible = false;
+		score.reset();
+	}
+	
+ }</code></pre>
+<p>First of all, 2 new variables are introduced - a "playing" boolean and a "gameOverScreen" instance of the GameOverScreen class we just created.</p>
+<p>The boolean is set to true in the initialization function, and the Entity is instantiated and added to the scene, but made invisible at start.</p>
+<p>Just like with the "paused" variable, we check the value of "playing" in update() and if it is false, then we skip the rest of the function. It is important to note, however, that this check is done after the super.update() method is called. This ensures that the animations and everything still plays when the ship is destroyed. We just need to stop spawning enemies.</p>
+<p>The gameOver() method, which is called when the number of lives becomes 0, first of all sets the value of "playing" to false. It then spawns 30 explosion particles at the ship's location, makes the ship invisible, and most importantly, sets its "active" property to false.</p>
+<p>In HaxePunk setting the active value to false is the same as pausing a single Entity.</p>
+<p>The restart() method restores the player's ship and all the values like score and life count.</p>
+<p>In the next part we'll <a href="34_haxepunk_shooting_game_tutorial_part_10.html">add power ups and take a look at detecting collisions using masks</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

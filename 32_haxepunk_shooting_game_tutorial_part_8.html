@@ -1,0 +1,196 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>32. HaxePunk shooting game tutorial: Part 8</title></head><body><h1>32. HaxePunk shooting game tutorial: Part 8</h1><h3>2014-10-03</h3><img src="img/67.png" class="thumb" alt="HaxePunk shooting tutorial health">
+<p>Today we'll add player's life counter to the shooter game.</p>
+<p>This entity will display a heart icon next to the number of lives left, when that number reaches 0 - the game should end.</p>
+<p>A life is lost when the player's ship collides with an oncoming enemy ship, which means that we will need to handle that collision detection.</p>
+<p>Up until now I showed how to display various screen elements (like pictures and text) by applying them directly to the "graphic" property of an Entity. Today I'll show you how to put multiple graphics into a single Entity.</p><p>You can add more than one graphics to an Entity using the addGraphic() method. In the LifeCounter.hx code below I use this approach to add both the heart icon and the text field to the entity:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.Text;
+
+/**
+ * Player life counter.
+ * @author Kirill Poletaev
+ */
+class LifeCounter extends Entity
+{
+	private var lives:Int;
+	private var txt:Text;
+
+	public function new(icon:Dynamic) 
+	{
+		super();
+		lives = 0;
+		layer = -4;
+		
+		txt = new Text(&quot;&quot;, 30);
+		txt.color = 0xff0000;
+		txt.size = 24;
+		
+		addGraphic(icon);
+		addGraphic(txt);
+		
+		updateLives(3);
+	}
+	
+	public function updateLives(num:Int):Void {
+		lives += num;
+		txt.text = lives + &quot;&quot;;
+	}
+	
+}</code></pre>
+<p>You can see that I also added an updateLives() method to this class, which lets us update the actual life number and the text field's value at the same time.</p>
+<p>The MainScene.hx class is also updated. I added a new LifeCounter instance, which receives a heart icon as the only constructor's parameter.</p>
+<p>I also pass a reference to the LifeCounter object to each EnemyShip instance:</p>
+<pre><code class="haxe">package ;
+
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	private var spawnInterval:Int;
+	private var enemyGraphic:Image;
+	private var explosion:Explosion;
+	private var score:Score;
+	private var paused:Bool;
+	private var pausedText:PausedText;
+	private var lifeCounter:LifeCounter;
+	
+	public function new()
+	{
+		super();
+		Input.define(&quot;up&quot;, [Key.UP, Key.W]);
+		Input.define(&quot;down&quot;, [Key.DOWN, Key.S]);
+		Input.define(&quot;left&quot;, [Key.LEFT, Key.A]);
+		Input.define(&quot;right&quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&quot;atlas/atlas.xml&quot;);
+		enemyGraphic = new Image(atlas.getRegion(&quot;enemyShip&quot;));
+		
+		player = new PlayerShip(atlas);
+		add(player);
+		spawnInterval = Math.round(Math.random() * 50) + 50;
+		
+		explosion = new Explosion(atlas);
+		add(explosion);
+		
+		score = new Score();
+		add(score);
+		
+		paused = false;
+		pausedText = new PausedText();
+		add(pausedText);
+		pausedText.visible = false;
+		
+		lifeCounter = new LifeCounter(new Image(atlas.getRegion(&quot;heart&quot;)));
+		add(lifeCounter);
+		lifeCounter.moveTo(10, 10);
+	}
+	
+	override public function update() {	
+		if (Input.pressed(Key.P)) {
+			togglePause();
+		}
+		
+		if (paused) return;
+		
+		super.update();
+		spawnInterval--;
+		if (spawnInterval == 0) {
+			var enemy = new EnemyShip(enemyGraphic, explosion, score, lifeCounter);
+			add(enemy);
+			enemy.x = Math.round(Math.random() * (HXP.width-64));
+			enemy.y = -50;
+			spawnInterval = Math.round(Math.random() * 20)+30;
+		}
+	}
+	
+	public function togglePause() {
+		paused = !paused;
+		pausedText.visible = !pausedText.visible;
+	}
+	  
+ }</code></pre>
+<p>We need to receive that reference in the EnemyShip.hx class, and add a new piece of code to the update() method, which will check for collision with the player's ship.</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.HXP;
+import com.haxepunk.graphics.Emitter;
+import com.haxepunk.Sfx;
+
+/**
+ * Enemy ship entity.
+ * @author Kirill Poletaev
+ */
+class EnemyShip extends Entity
+{
+	private var speed:Int;
+	private var health:Int;
+	private var explosion:Explosion;
+	private var score:Score;
+	private var sfx_explosion:Sfx;
+	private var sfx_hit:Sfx;
+	private var lifeCounter:LifeCounter;
+
+	public function new(g:Dynamic, explosion:Explosion, score:Score, lifeCounter:LifeCounter) 
+	{
+		super();
+		graphic = g;
+		this.explosion = explosion;
+		this.score = score;
+		this.lifeCounter = lifeCounter;
+		speed = Math.ceil(Math.random() * 3);
+		setHitbox(64, 48, 0, 0);
+		health = 5;
+		
+		sfx_explosion = new Sfx(&quot;audio/explosion.wav&quot;);
+		sfx_hit = new Sfx(&quot;audio/hit.wav&quot;);
+	}
+	
+	override public function update() {
+		this.y += speed;
+		if (this.y &gt; HXP.height) {
+			scene.remove(this);
+		}
+		
+		var collidedEntity = collide(&quot;bullet&quot;, x, y);
+		if (collidedEntity != null) {
+			health--;
+			scene.remove(collidedEntity);
+			explosion.explode(x, y);
+			sfx_hit.play(1, (x/HXP.width)*1.6 - 0.8);
+		}
+		
+		collidedEntity = collide(&quot;player&quot;, x, y);
+		if (collidedEntity != null) {
+			health = 0;
+			lifeCounter.updateLives(-1);
+			sfx_hit.play(1, (x/HXP.width)*1.6 - 0.8);
+		}
+		
+		if (health == 0) {
+			var i:Int = 0;
+			while(i&lt;3){
+				explosion.explode(x, y);
+				i++;
+			}
+			score.add(1);
+			sfx_explosion.play(1, (x/HXP.width)*1.6 - 0.8);
+			scene.remove(this);
+		}
+	}
+	
+}</code></pre>
+<p>When the ships have collided, this enemy ship will instantly explode, and the player's life count will decrease by 1.</p>
+<p>Of course, the PlayerShip.hx class also needs to be updated, since we are now handling collisions with it and all the enemy ships. Set the entity type to "player" and create a hitbox, both of these things are done in the constructor of the class:</p>
+<pre><code class="haxe">type = "player";
+setHitbox(64, 48, 0, 0);
+</code></pre>
+<p>If you test the game now, you should be able to run into enemies and have them explode. But you will also lose a life each time you touch an enemy.</p>
+<p>Currently, the life count can go to negative numbers, because we do not stop the game if the player has no lives left.</p>
+<p>We will handle that in the <a href="33_haxepunk_shooting_game_tutorial_part_9.html">next tutorial</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

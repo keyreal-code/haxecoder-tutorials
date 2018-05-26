@@ -1,0 +1,110 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>31. HaxePunk shooting game tutorial: Part 7</title></head><body><h1>31. HaxePunk shooting game tutorial: Part 7</h1><h3>2014-10-02</h3><img class="thumb" alt="HaxePunk shooting game pause tutorial" src="img/66.png">
+<p>Pausing a game is basic, but very common and perhaps even essential functionality. Today we'll make our HaxePunk shooter game pausable.</p>
+<p>When a game is paused, the gameplay stops. This means that the player stops responding to keyboard inputs, there is no collision being checked, no entity is moved... That's already a lot of things to disable.</p>
+<p>But disabling all of this is actually very simple, when you realize that all of that functionality is dependent on the scene's update function, which is called every frame.</p>
+<p>All we need to do is skip that function when the game is paused.</p><p>How do you actually accomplish this?</p>
+<p>Take a look at the updated MainScene.hx code:</p>
+<pre><code class="haxe">package ;
+
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	private var spawnInterval:Int;
+	private var enemyGraphic:Image;
+	private var explosion:Explosion;
+	private var score:Score;
+	private var paused:Bool;
+	private var pausedText:PausedText;
+	
+	public function new()
+	{
+		super();
+		Input.define(&quot;up&quot;, [Key.UP, Key.W]);
+		Input.define(&quot;down&quot;, [Key.DOWN, Key.S]);
+		Input.define(&quot;left&quot;, [Key.LEFT, Key.A]);
+		Input.define(&quot;right&quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&quot;atlas/atlas.xml&quot;);
+		enemyGraphic = new Image(atlas.getRegion(&quot;enemyShip&quot;));
+		
+		player = new PlayerShip(atlas);
+		add(player);
+		spawnInterval = Math.round(Math.random() * 50) + 50;
+		
+		explosion = new Explosion(atlas);
+		add(explosion);
+		
+		score = new Score();
+		add(score);
+		
+		paused = false;
+		pausedText = new PausedText();
+		add(pausedText);
+		pausedText.visible = false;
+	}
+	
+	override public function update() {	
+		if (Input.pressed(Key.P)) {
+			togglePause();
+		}
+		
+		if (paused) return;
+		
+		super.update();
+		spawnInterval--;
+		if (spawnInterval == 0) {
+			var enemy = new EnemyShip(enemyGraphic, explosion, score);
+			add(enemy);
+			enemy.x = Math.round(Math.random() * (HXP.width-64));
+			enemy.y = -50;
+			spawnInterval = Math.round(Math.random() * 20)+30;
+		}
+	}
+	
+	public function togglePause() {
+		paused = !paused;
+		pausedText.visible = !pausedText.visible;
+	}
+	  
+ }</code></pre>
+<p>I created a "paused" boolean, which is false by the default.</p>
+<p>If you look at the update() function, you'll see that the first thing I do there is check whether the P key is pressed (I will bind the pause toggling functionality to the P key), and a togglePause() method is called if it is.</p>
+<p>The togglePause() function sets the "paused" variable's value to its opposite value.</p>
+<p>The second thing I do in the update() function is check whether the paused value is true, and if it is - I return from the function. This skips the rest of the function, and, since the scene's update() method updates all the entities, all that entity functionality is paused as well.</p>
+<p>There's also a PausedText instance, which is added to the scene but is made invisible in the beginning. The visibility of this entity is also toggled in the togglePause() function.</p>
+<p>The code of PausedText.hx looks like this:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.Text;
+import com.haxepunk.HXP;
+import openfl.text.TextFormatAlign;
+
+/**
+ * Paused state indicator.
+ * @author Kirill Poletaev
+ */
+class PausedText extends Entity
+{
+	private var pausedText:Text;
+
+	public function new() 
+	{
+		super();
+		pausedText = new Text(&quot;Paused&quot;, 0, HXP.height / 2 - 20, HXP.width);
+		pausedText.align = TextFormatAlign.CENTER;
+		pausedText.size = 40;
+		graphic = pausedText;
+		layer = -3;
+	}
+	
+}</code></pre>
+<p>As you can see, it's a simple Entity subclass, which displays the "Paused" text message as long as the game is paused.</p>
+<p>And that's how you pause a game in HaxePunk. This kind of approach also works with any other framework or environment where all entities share a common update loop.</p>
+<p>We will add <a href="32_haxepunk_shooting_game_tutorial_part_8.html">a life counter and player collision detection in the next part</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

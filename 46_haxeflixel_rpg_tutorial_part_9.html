@@ -1,0 +1,261 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>46. HaxeFlixel RPG tutorial: Part 9</title></head><body><h1>46. HaxeFlixel RPG tutorial: Part 9</h1><h3>2014-10-17</h3><img alt="HaxeFlixel RPG tutorial FlxBar" src="img/95.png" class="thumb">
+<p>In this part we'll add a separate class for managing everything related to HUD. We'll also add a level counter and an experience bar.</p>
+<p>The experience bar is made using HaxeFlixel's FlxBar class.</p>
+<p>We'll first remove all the health related code from the PlayState.hx class and later move it to the new HUD class.</p>
+<p>The new HUD.hx class will extend FlxSpriteGroup, which will make it possible to add children sprites to it.</p>
+<p>Below is the full code to this class with the explanation.</p><pre><code class="haxe">package ;
+import flixel.group.FlxSpriteGroup;
+import flixel.text.FlxText;
+import flixel.ui.FlxBar;
+
+/**
+ * RPG HUD.
+ * @author Kirill Poletaev
+ */
+class HUD extends FlxSpriteGroup
+{
+	private var healthDisplay:FlxText;
+	private var levelDisplay:FlxText;
+	private var expBar:FlxBar;
+	
+	private var hp:Int;
+	private var maxHp:Int;
+	private var exp:Int;
+	private var maxExp:Int;
+	private var level:Int;
+	
+	public function new() 
+	{
+		super();
+		scrollFactor.x = 0;
+		scrollFactor.y = 0;
+		
+		healthDisplay = new FlxText(2, 2);
+		hp = 5;
+		maxHp = 10;
+		add(healthDisplay);
+		
+		levelDisplay = new FlxText(2, 12);
+		level = 1;
+		add(levelDisplay);
+		
+		maxExp = 10;
+		exp = 3;
+		expBar = new FlxBar(4, 25, FlxBar.FILL_LEFT_TO_RIGHT, 100, 4);
+		expBar.createFilledBar(0xFF63460C, 0xFFE6AA2F);
+		add(expBar);
+	}
+	
+	override public function update() {
+		healthDisplay.text = &quot;Health: &quot; + hp + &quot;/&quot; + maxHp;
+		levelDisplay.text = &quot;Level: &quot; + level;
+		expBar.currentValue = exp;
+		expBar.setRange(0, maxExp);
+	}
+	
+	public function addHealth(num:Int):Void {
+		hp += num;
+		if (hp &gt; maxHp) {
+			hp = maxHp;
+		}
+	}
+	
+}</code></pre>
+<p>You can see that I introduced new variables, and that I renamed the "health" variable to "hp". This is because all FlxSprite objects have a "health" property that I am not going to use this time.</p>
+<p>The FlxBar object that we're using to display the player's experience can be skinned using various methods, in this casae I use createFilledBar() to generate a simple bar with a solid fill.</p>
+<p>The FlxBar constructor has several optional parameters which allow you to tell the bar where to take its values from by providing a variable name. But in this case it's not the ideal approach, since the maximal experience value will increase with every new level.</p>
+<p>All the updates are now handled in HUD's own update() method. The currently displayed value of the FlxBar can be set using the currentValue property, and the minimum/maximum values can be set using the setRange() method.</p>
+<p>Now we just need to add the HUD to PlayState and remove all the previous health-related code from it.</p>
+<p>We'll end up with a PlayState.hx class that looks like this:</p>
+<pre><code class="haxe">package ;
+
+import flixel.FlxCamera;
+import flixel.FlxG;
+import flixel.FlxObject;
+import flixel.FlxSprite;
+import flixel.FlxState;
+import flixel.group.FlxGroup;
+import flixel.group.FlxSpriteGroup;
+import flixel.group.FlxTypedGroup;
+import flixel.text.FlxText;
+import flixel.tile.FlxTilemap;
+import flixel.ui.FlxBar;
+import flixel.util.FlxColor;
+import flixel.util.FlxPath;
+import flixel.util.FlxPoint;
+import openfl.Assets;
+
+/**
+ * A FlxState which can be used for the actual gameplay.
+ */
+class PlayState extends FlxState
+{
+	private var tileMap:FlxTilemap;
+	public static var TILE_WIDTH:Int = 16;
+	public static var TILE_HEIGHT:Int = 16;
+	public static var LEVEL_WIDTH:Int = 50;
+	public static var LEVEL_HEIGHT:Int = 50;
+	public static var CAMERA_SPEED:Int = 8;
+	private var camera:FlxCamera;
+	private var cameraFocus:FlxSprite;
+	private var movementMarker:FlxSprite;
+	private var hero:FlxSprite;
+	private var path:FlxPath;
+	
+	private var hud:HUD;
+	
+	private var potions:FlxTypedGroup&lt;Potion&gt;;
+	/**
+	 * Function that is called up when to state is created to set it up.
+	 */
+	override public function create():Void
+	{
+		super.create();
+
+		FlxG.worldBounds.width = TILE_WIDTH * LEVEL_WIDTH;
+		FlxG.worldBounds.height = TILE_HEIGHT * LEVEL_HEIGHT;
+		
+		tileMap = new FlxTilemap();
+		tileMap.loadMap(Assets.getText(&quot;assets/data/map.csv&quot;), &quot;assets/images/tileset.png&quot;, TILE_WIDTH, TILE_HEIGHT, 0, 1);
+		tileMap.setTileProperties(0, FlxObject.ANY);
+		tileMap.setTileProperties(1, FlxObject.ANY);
+		tileMap.setTileProperties(2, FlxObject.NONE);
+		add(tileMap);
+		
+		cameraFocus = new FlxSprite();
+		cameraFocus.makeGraphic(1, 1, FlxColor.TRANSPARENT);
+		add(cameraFocus);
+		
+		camera = FlxG.camera;
+		camera.follow(cameraFocus, FlxCamera.STYLE_LOCKON);
+		
+		movementMarker = new FlxSprite();
+		movementMarker.visible = false;
+		add(movementMarker);
+		
+		hero = new FlxSprite(TILE_WIDTH * 7, TILE_HEIGHT * 3);
+		hero.loadGraphic(&quot;assets/images/hero.png&quot;, true, 16, 16);
+		hero.animation.add(&quot;down&quot;, [0, 1, 0, 2]);
+		hero.animation.add(&quot;up&quot;, [3, 4, 3, 5]);
+		hero.animation.add(&quot;right&quot;, [6, 7, 6, 8]);
+		hero.animation.add(&quot;left&quot;, [9, 10, 9, 11]);
+		add(hero);
+		
+		potions = new FlxTypedGroup&lt;Potion&gt;();
+		add(potions);
+		spawnPotion(5, 5);
+		spawnPotion(6, 5);
+		spawnPotion(3, 10);
+		spawnPotion(4, 10);
+		spawnPotion(1, 10);
+		
+		hero.animation.play(&quot;down&quot;);
+		
+		path = new FlxPath();
+		
+		hud = new HUD();
+		add(hud);
+	}
+	
+	private function spawnPotion(x:Int, y:Int):Void{
+		var potion:Potion = new Potion();
+		potion.x = x * TILE_WIDTH;
+		potion.y = y * TILE_HEIGHT;
+		potions.add(potion);
+	}
+	
+	private function onPotionCollision(hero:FlxSprite, potion:Potion):Void {
+		if (potion.exists &amp;&amp; hero.exists) {
+			potion.kill();
+			hud.addHealth(1);
+		}
+	}
+
+	/**
+	 * Function that is called when this state is destroyed - you might want to
+	 * consider setting all objects this state uses to null to help garbage collection.
+	 */
+	override public function destroy():Void
+	{
+		super.destroy();
+	}
+
+	/**
+	 * Function that is called once every frame.
+	 */
+	override public function update():Void
+	{
+		super.update();
+		
+		// Collisions
+		FlxG.overlap(hero, potions, onPotionCollision);
+		
+		// Animation
+		if (!path.finished &amp;&amp; path.nodes!=null) {
+			if (path.angle == 0 || path.angle == 45 || path.angle == -45) {
+				hero.animation.play(&quot;up&quot;);
+			}
+			if (path.angle == 180 || path.angle == -135 || path.angle == 135) {
+				hero.animation.play(&quot;down&quot;);
+			}
+			if (path.angle == 90) {
+				hero.animation.play(&quot;right&quot;);
+			}
+			if (path.angle == -90) {
+				hero.animation.play(&quot;left&quot;);
+			}
+		} else {
+			hero.animation.curAnim.curFrame = 0;
+			hero.animation.curAnim.stop();
+		}
+		
+		// Camera movement
+		if (FlxG.keys.anyPressed([&quot;DOWN&quot;, &quot;S&quot;])) {
+			cameraFocus.y += CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;UP&quot;, &quot;W&quot;])) {
+			cameraFocus.y -= CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;RIGHT&quot;, &quot;D&quot;])) {
+			cameraFocus.x += CAMERA_SPEED;
+		}
+		if (FlxG.keys.anyPressed([&quot;LEFT&quot;, &quot;A&quot;])) {
+			cameraFocus.x -= CAMERA_SPEED;
+		}
+		
+		// Camera bounds
+		if (cameraFocus.x &lt; FlxG.width / 2) {
+			cameraFocus.x = FlxG.width / 2;
+		}
+		if (cameraFocus.x &gt; LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2) {
+			cameraFocus.x = LEVEL_WIDTH * TILE_WIDTH - FlxG.width / 2;
+		}
+		if (cameraFocus.y &lt; FlxG.height / 2) {
+			cameraFocus.y = FlxG.height / 2;
+		}
+		if (cameraFocus.y &gt; LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2) {
+			cameraFocus.y = LEVEL_HEIGHT * TILE_HEIGHT - FlxG.height / 2;
+		}
+		
+		// Mouse clicks
+		if (FlxG.mouse.justReleased){
+			var tileCoordX:Int = Math.floor(FlxG.mouse.x / TILE_WIDTH);
+			var tileCoordY:Int = Math.floor(FlxG.mouse.y / TILE_HEIGHT);
+			
+			movementMarker.visible = true;
+			if (tileMap.getTile(tileCoordX, tileCoordY) == 2) {
+				var nodes:Array&lt;FlxPoint&gt; = tileMap.findPath(FlxPoint.get(hero.x + TILE_WIDTH/2, hero.y + TILE_HEIGHT/2), FlxPoint.get(tileCoordX * TILE_WIDTH + TILE_WIDTH/2, tileCoordY * TILE_HEIGHT + TILE_HEIGHT/2));
+				if (nodes != null) {
+					path.start(hero, nodes);
+					movementMarker.loadGraphic(AssetPaths.marker_move__png, false, 16, 16);
+				}else {
+					movementMarker.loadGraphic(AssetPaths.marker_stop__png, false, 16, 16);
+				}
+			}else {
+				movementMarker.loadGraphic(AssetPaths.marker_stop__png, false, 16, 16);
+			}
+			movementMarker.setPosition(tileCoordX * TILE_WIDTH, tileCoordY * TILE_HEIGHT);
+		}
+	}
+}</code></pre>
+<p>We'll <a href="47_haxeflixel_rpg_tutorial_part_10.html">add randomly wandering enemies next time</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

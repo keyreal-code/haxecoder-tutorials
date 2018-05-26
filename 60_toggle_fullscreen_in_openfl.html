@@ -1,0 +1,22 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>60. Toggle fullscreen in OpenFL</title></head><body><h1>60. Toggle fullscreen in OpenFL</h1><h3>2014-10-31</h3><img alt="Toggle fullscreen in OpenFL" class="thumb" src="img/123.png">
+<p>Fullscreen mode is widely available in games and apps that want to display as much content as possible, such as video players.</p>
+<p>In this tutorial I'll show you how to toggle fullscreen mode using OpenFL.</p>
+<p>There are three fullscreen modes in OpenFL, similarly to Flash API. They are all described in the StageDisplayState class using static properties.</p>
+<p>The modes are: FULL_SCREEN, FULL_SCREEN_INTERACTIVE and NORMAL.</p>
+<p>These values can be used both to check the current display mode and to set it.</p><p>The NORMAL value is set when the application is displayed in its usual state, not fullscreen.</p>
+<p>The idea of FULL_SCREEN and FULL_SCREEN_INTERACTIVE being two separate values came from Flash player, the only difference being that FULL_SCREEN_INTERACTIVE allows more user interaction in full screen mode (such as text input).</p>
+<p>Note that to use FULL_SCREEN_INTERACTIVE when targeting Flash, the HTML embed code needs to be <a href="http://help.adobe.com/en_US/as3/dev/WS58a13becbbb904c7-28cf6d32136e60de784-8000.html">properly constructed</a> to allow this behavior.</p>
+<p>The values are set to the displayState property of the current stage:</p>
+<pre><code class="haxe">Lib.current.stage.displayState = StageDisplayState.NORMAL;</code></pre>
+<p>The values can be used in conditionals as well, as shown in this fullscreen toggling example:</p>
+<pre><code class="haxe">private function toggleFullscreen() {
+	if(Lib.current.stage.displayState != StageDisplayState.FULL_SCREEN_INTERACTIVE){
+		Lib.current.stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+	}else {
+		Lib.current.stage.displayState = StageDisplayState.NORMAL;
+	}
+}
+</code></pre>
+<p>To start the application in fullscreen mode, you can use the fullscreen attribute of the window tag in application.xml:</p>
+<pre><code class="xml">&lt;window fullscreen=&quot;true&quot; /&gt;</code></pre>
+<p>The toggle function will still work even if you use the xml approach.</p><footer>&copy; Kirill Poletaev</footer></body></html>

@@ -1,0 +1,180 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>18. Tile based game tutorial using Haxe and OpenFL: Part 1</title></head><body><h1>18. Tile based game tutorial using Haxe and OpenFL: Part 1</h1><h3>2014-09-19</h3><img class="thumb" alt="tile based game in Haxe using OpenFL and Tilesheet" src="img/37.png">
+<p>Tile based games are games where the graphics are constructed out of small square, rectangular or hexagonal tiles.</p>
+<p>Tile based approach to game development has multiple advantages, such as very fast rendering time, easy map creation, simple collision detection, re-usability of the same graphics via a tileset, possibility of random world generation, and so on.</p>
+<p>In this tutorial series I will teach you how to create a tile based game engine that can be extended to create games of many different genres. Techniques learned in this series will be useful even when developing non-tile based games.</p><p>The game engine will be developed using <a href="1_what_is_haxe.html">Haxe</a> and <a href="2_getting_started_with_haxe.html">OpenFL</a>. I'm not going to use any game frameworks for this tutorial. We're going to make a game from scratch!</p>
+<p>For efficient graphics rendering we're going to use the Tilesheet class that's included in OpenFL. If you don't know what that is, you should <a href="14_fast_2d_rendering_using_tilesheets_in_openfl.html">read this tutorial first</a>.</p>
+<p>Create a new project in FlashDevelop. You can also use another IDE, of course, in that case I assume that you know what you're doing and can still follow the steps.</p>
+<p>In the Main class we'll have to declare a bunch of variables. Firstly, we'll need a Sprite object to hold the Tilesheet-generated graphics, and a Tilesheet object.</p>
+<pre><code class="haxe">private var tilesheetCanvas:Sprite;
+private var tilesheet:Tilesheet;</code></pre>
+<p>Tile map data is stored in 2 dimensional arrays (or matrices, if you will). Declare a new variable, which is an array of arrays of integers.</p>
+<pre><code class="haxe">private var map:Array&lt;Array&lt;Int&gt;&gt;;</code></pre>
+<p>Finally, add 1 more variable for storing the size of a single tile.</p>
+<pre><code class="haxe">private var tileSize:Int;</code></pre>
+<p>A tile map is a grid of tiles, which re-uses graphics from a tile set. We don't have a tile set yet, so here's one I made:</p>
+<img class="center" alt="tileset" src="img/39.png">
+<p>The image is 64 pixels wide and 32 pixels high, with two tile graphics - grass and water.</p>
+<p>Add this image as an asset to your assets/img/ directory.</p>
+<p>Now go to the init() function to initialize everything related to the Tilesheet object.</p>
+<pre><code class="haxe">// Tilesheet initialization
+var tilesBitmapData:BitmapData = Assets.getBitmapData("img/set.png");
+tilesheetCanvas = new Sprite();
+addChild(tilesheetCanvas);
+tilesheet = new Tilesheet(tilesBitmapData);
+tilesheet.addTileRect(new Rectangle(0, 0, 32, 32));
+tilesheet.addTileRect(new Rectangle(32, 0, 32, 32));
+</code></pre>
+<p>Here we load the asset from the directory, create the canvas Sprite, apply the tile set image to a Tilesheet object and create 2 tile rectangles. You may have guessed it - the first tile represents grass, the second - water. Their IDs are 0 and 1 respectively. </p>
+<p>Set the tileSize value to 32, since our tiles are both 32x32. Set the map object to a new array of arrays of integers.</p>
+<p>I'm going to create a new class TileMap later for applying map data to arrays using a static method create().</p>
+<pre><code class="haxe">// Map data
+tileSize = 32;
+map = new Array&lt;Array&lt;Int&gt;&gt;();
+TileMap.create(map);
+</code></pre>
+<p>You can create a new TileMap class right now. Inside of it, add a create() method which receives a map array as a parameter and applies map data to it. The reason I'm storing this data in a separate class is because I don't want it to clutter up my main class.</p>
+<p>This is the simplest way to store level data that I can think of. Perhaps better but a bit more advanced ways would be storing them in files with a custom format, or even simple CSV files, but this will do for now.</p>
+<p>Anyway, here's the code for TileMap.hx:</p>
+<pre><code class="haxe">package ;
+
+/**
+ * Map data.
+ * @author Kirill Poletaev
+ */
+class TileMap
+{
+
+	public static function create(map:Array&lt;Array&lt;Int&gt;&gt;)
+	{
+		map.push([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+		map.push([1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1]);
+		map.push([1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+		map.push([1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1]);
+		map.push([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+	}
+	
+}</code></pre>
+<p>That's a lot of lines!</p>
+<p>Basically, I create a matrix of 0 and 1 values, where the numbers represent the id of the tile to draw. In this case, 0 is grass and 1 is water.</p>
+<p>Back to Main.hx, init() function: create a game loop by adding an ENTER_FRAME listener.</p>
+<pre><code class="haxe">// Game loop
+stage.addEventListener(Event.ENTER_FRAME, everyFrame);</code></pre>
+<p>The event handler needs to just loop through the map data rows and columns, generate a tileData array and pass it to the draw call of the Tilesheet object.</p>
+<pre><code class="haxe">private function everyFrame(evt:Event):Void {
+	var tileData:Array&lt;Float&gt; = [];
+	for (row in 0...map.length) {
+		for (cell in 0...map[row].length) {
+			tileData = tileData.concat([tileSize * cell, tileSize * row, map[row][cell]]);
+		}
+	}
+	tilesheet.drawTiles(tilesheetCanvas.graphics, tileData);
+}
+</code></pre>
+<p>We add 3 values to the tileData array for each object - the x coordinate (calculated by multiplying the column index by tileSize), the y coordinate (calculated by multiplying the row index by tileSize), and the tile ID.</p>
+<p>If you run the project now, you'll see something like this:</p>
+<img class="center" alt="tileset" src="img/38.png">
+<p>Pretty cool!</p>
+<p>Here's the full code to Main.hx:</p>
+<pre><code class="haxe">package ;
+
+import flash.display.BitmapData;
+import flash.display.Sprite;
+import flash.events.Event;
+import flash.Lib;
+import openfl.Assets;
+import openfl.display.Tilesheet;
+import openfl.geom.Rectangle;
+
+/**
+ * Tile based game.
+ * @author Kirill Poletaev
+ */
+
+class Main extends Sprite 
+{
+	private var inited:Bool;
+	private var tilesheetCanvas:Sprite;
+	private var tilesheet:Tilesheet;
+	private var map:Array&lt;Array&lt;Int&gt;&gt;;
+	private var tileSize:Int;
+
+	/* ENTRY POINT */
+	
+	function resize(e) 
+	{
+		if (!inited) init();
+		// else (resize or orientation change)
+	}
+	
+	function init() 
+	{
+		if (inited) return;
+		inited = true;
+		
+		// Tilesheet initialization
+		var tilesBitmapData:BitmapData = Assets.getBitmapData(&quot;img/set.png&quot;);
+		tilesheetCanvas = new Sprite();
+		addChild(tilesheetCanvas);
+		tilesheet = new Tilesheet(tilesBitmapData);
+		tilesheet.addTileRect(new Rectangle(0, 0, 32, 32));
+		tilesheet.addTileRect(new Rectangle(32, 0, 32, 32));
+		
+		// Map data
+		tileSize = 32;
+		map = new Array&lt;Array&lt;Int&gt;&gt;();
+		TileMap.create(map);
+		
+		// Game loop
+		stage.addEventListener(Event.ENTER_FRAME, everyFrame);
+	}
+	
+	private function everyFrame(evt:Event):Void {
+		var tileData:Array&lt;Float&gt; = [];
+		for (row in 0...map.length) {
+			for (cell in 0...map[row].length) {
+				tileData = tileData.concat([tileSize * cell, tileSize * row, map[row][cell]]);
+			}
+		}
+		tilesheet.drawTiles(tilesheetCanvas.graphics, tileData);
+	}
+
+	/* SETUP */
+
+	public function new() 
+	{
+		super();	
+		addEventListener(Event.ADDED_TO_STAGE, added);
+	}
+
+	function added(e) 
+	{
+		removeEventListener(Event.ADDED_TO_STAGE, added);
+		stage.addEventListener(Event.RESIZE, resize);
+		#if ios
+		haxe.Timer.delay(init, 100); // iOS 6
+		#else
+		init();
+		#end
+	}
+	
+	public static function main() 
+	{
+		// static entry point
+		Lib.current.stage.align = flash.display.StageAlign.TOP_LEFT;
+		Lib.current.stage.scaleMode = flash.display.StageScaleMode.NO_SCALE;
+		Lib.current.addChild(new Main());
+	}
+}
+</code></pre>
+<p>Now we have rendered a small map using tile based approach.</p>
+<p>Next time we'll <a href="19_tile_based_game_tutorial_using_haxe_and_openfl_part_2.html">add a player character</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

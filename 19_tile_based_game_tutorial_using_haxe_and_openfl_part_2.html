@@ -1,0 +1,236 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>19. Tile based game tutorial using Haxe and OpenFL: Part 2</title></head><body><h1>19. Tile based game tutorial using Haxe and OpenFL: Part 2</h1><h3>2014-09-20</h3><img src="img/42.png" class="thumb" alt="Tile based game tutorial OpenFL">
+<p>We have generated a map using a tile set. Now's the time to add a player character to our game, which will eventually be controllable using the keyboard.</p>
+<p>Since one Tilesheet instance can only load a single tile set bitmap, when we add new tiles we need to extend the existing tile set image.</p>
+<p>In a character's case, the tile set needs to contain animation frames of this character in different directions. In this game I'll support 4 direction movements, so I'm going to add 4 new rows of tiles to the tile set, each containing 3 movement frames.</p><p>The new tile set looks like this:</p>
+<img src="img/40.png" class="center" alt="New tile set including player character">
+<p>Unlike the terrain map, our player will not be static. Which means that we need to create some sort of a system that lets us control the character's position, animation and other behavior.</p>
+<p>And it's not just the player that needs to be handled in this special way - all other entities (which are not part of the terrain) that we will add in the future are most likely going to be dynamic - this includes any collectibles, enemies, NPCs, props and so on.</p>
+<p>Every entity like that will obviously have unique properties, animation and behavior - our player character, for instance, needs to be controlled using the keyboard and has to face the direction he's walking in.</p>
+<p>This sounds kind of complicated, how would I actually make a system that is supposed to support all these things?</p>
+<p>The solution is quite simple, actually.</p>
+<p>We're going to create a class called TileEntity, which will have 1 method - draw(). This method will return the portion of the tileData array that represents this specific entity. All our entities will extend this class, and be drawn using the same common draw() method.</p>
+<p>This elegant approach will allow us to have a specific interface for adding all entities to the draw call of the Tilesheet object, while at the same time giving us freedom to customize each entity's custom individual behavior.</p>
+<p>If you're still confused, you'll understand the mechanism as we implement it.</p>
+<p>Start by creating a new class TileEntity.hx, add this code:</p>
+<pre><code class="haxe">package ;
+
+/**
+ * Base class for drawable tile entities.
+ * @author Kirill Poletaev
+ */
+class TileEntity
+{
+	
+	public function draw():Array&lt;Float&gt; {
+		return [];
+	}
+	
+}</code></pre>
+<p>Back to Main.hx class, let's declare 2 new variables - one for storing all entities, and one for our player character specifically:</p>
+<pre><code class="haxe">private var entities:Array&lt;TileEntity&gt;;
+private var character:PlayerCharacter;
+</code></pre>
+<p>Go to the everyFrame() function. Add the code that will loop over all entities in the array and add them one by one to the tileData array:</p>
+<pre><code class="haxe">private function everyFrame(evt:Event):Void {
+	var tileData:Array&lt;Float&gt; = [];
+	
+	// Terrain
+	for (row in 0...map.length) {
+		for (cell in 0...map[row].length) {
+			tileData = tileData.concat([tileSize * cell, tileSize * row, map[row][cell]]);
+		}
+	}
+	
+	// Entities
+	for (entity in entities) {
+		tileData = tileData.concat(entity.draw());
+	}
+	tilesheet.drawTiles(tilesheetCanvas.graphics, tileData);
+}
+</code></pre>
+<p>Go to the init() function and set the entities array to a new empty array:</p>
+<pre><code class="haxe">// Entities
+entities = new Array&lt;TileEntity&gt;();
+</code></pre>
+<p>We're done with the entity system.</p>
+<p>We can now create entities that extend the TileEntity class, add them to the entities array and they will be drawn on top of the terrain tiles.</p>
+<p>In the same init() function, create our PlayerCharacter instance. Pass the Tilesheet object as the parameter to its constructor. When the character is created, add it to the entities array.</p>
+<pre><code class="haxe">// Player character creation
+character = new PlayerCharacter(tilesheet);
+entities.push(character);
+</code></pre>
+<p>We can now create our PlayerCharacter class. Here's the full code to PlayerCharacter.hx, I will explain it right away:</p>
+<pre><code class="haxe">package ;
+import openfl.display.Tilesheet;
+import openfl.geom.Point;
+import openfl.geom.Rectangle;
+
+/**
+ * Player character's entity.
+ * @author Kirill Poletaev
+ */
+class PlayerCharacter extends TileEntity
+{
+	private var faceDown:Array&lt;Int&gt;;
+	private var faceUp:Array&lt;Int&gt;;
+	private var faceRight:Array&lt;Int&gt;;
+	private var faceLeft:Array&lt;Int&gt;;
+	
+	private var position:Point;
+	private var direction:Array&lt;Int&gt;;
+	private var step:Int;
+
+	public function new(tilesheet:Tilesheet) 
+	{
+		faceDown = new Array&lt;Int&gt;();
+		faceUp = new Array&lt;Int&gt;();
+		faceRight = new Array&lt;Int&gt;();
+		faceLeft = new Array&lt;Int&gt;();
+		
+		faceDown.push(tilesheet.addTileRect(new Rectangle(0, 32, 32, 32)));
+		faceDown.push(tilesheet.addTileRect(new Rectangle(32, 32, 32, 32)));
+		faceDown.push(tilesheet.addTileRect(new Rectangle(64, 32, 32, 32)));
+		
+		faceUp.push(tilesheet.addTileRect(new Rectangle(0, 64, 32, 32)));
+		faceUp.push(tilesheet.addTileRect(new Rectangle(32, 64, 32, 32)));
+		faceUp.push(tilesheet.addTileRect(new Rectangle(64, 64, 32, 32)));
+		
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(0, 96, 32, 32)));
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(32, 96, 32, 32)));
+		faceLeft.push(tilesheet.addTileRect(new Rectangle(64, 96, 32, 32)));
+		
+		faceRight.push(tilesheet.addTileRect(new Rectangle(0, 128, 32, 32)));
+		faceRight.push(tilesheet.addTileRect(new Rectangle(32, 128, 32, 32)));
+		faceRight.push(tilesheet.addTileRect(new Rectangle(64, 128, 32, 32)));
+		
+		position = new Point(128, 128);
+		direction = faceDown;
+		step = 0;
+	}
+	
+	override public function draw():Array&lt;Float&gt; {
+		var tile:Int = direction[step];
+		return [position.x, position.y, tile];
+	}
+	
+}</code></pre>
+<p>In the top of the class we declare 4 arrays of integer values. These arrays will hold the IDs of the tiles from Tilesheet, which represent the player character's animation frame. The arrays are populated in the constructor.</p>
+<p>All the addTileRect() calls return an integer value, which is the ID of the tile that has just been added. All we need to do is split the tile set into character animation frames and add them to the respective arrays.</p>
+<p>After that our faceDown array, for example, will have 3 values - the IDs of the tiles in Tilesheet that represent the 3 frames of our character walking downwards (i.e. facing downwards). </p>
+<p>The position object simply stores the coordinates of the character. We explictly set it to (128,128) in the constructor for now.</p>
+<p>The direction array is not actually a new array - it will always be a reference to one of the 4 existing arrays - faceDown, faceUp, faceLeft or faceRight. The reason we need it is to be able to easily change the direction that the player faces. We'll add this functionality later, but set this variable to refer to faceDown by default in the constructor.</p>
+<p>The step value is the animation frame, set it to 0 by default. It represents the index of the animation frame in each array. Since we only have 3 frames for movement in each direction, this variable's potential values are 0, 1 and 2.</p>
+<p>The draw() function makes use of all these values and returns an array of values that is later parsed by the draw call of the Tilesheet object. First the tile id is calculated, by accessing the required animation array using the step index. Then we create an array of 3 values - x and y coordinates, and the calculated tile id.</p>
+<p>If everything was done correctly, if you run the game now you'll see the following picture:</p>
+<img src="img/41.png" class="center" alt="Player character in a tile based game">
+<p>Great success!</p>
+<p>Here's full code to the Main.hx class for reference:</p>
+<pre><code class="haxe">package ;
+
+import flash.display.BitmapData;
+import flash.display.Sprite;
+import flash.events.Event;
+import flash.Lib;
+import openfl.Assets;
+import openfl.display.Tilesheet;
+import openfl.geom.Rectangle;
+
+/**
+ * Tile based game.
+ * @author Kirill Poletaev
+ */
+
+class Main extends Sprite 
+{
+	private var inited:Bool;
+	private var tilesheetCanvas:Sprite;
+	private var tilesheet:Tilesheet;
+	private var map:Array&lt;Array&lt;Int&gt;&gt;;
+	private var tileSize:Int;
+	private var entities:Array&lt;TileEntity&gt;;
+	private var character:PlayerCharacter;
+
+	/* ENTRY POINT */
+	
+	function resize(e) 
+	{
+		if (!inited) init();
+		// else (resize or orientation change)
+	}
+	
+	function init() 
+	{
+		if (inited) return;
+		inited = true;
+		
+		// Tilesheet initialization
+		var tilesBitmapData:BitmapData = Assets.getBitmapData(&quot;img/set.png&quot;);
+		tilesheetCanvas = new Sprite();
+		addChild(tilesheetCanvas);
+		tilesheet = new Tilesheet(tilesBitmapData);
+		tilesheet.addTileRect(new Rectangle(0, 0, 32, 32));
+		tilesheet.addTileRect(new Rectangle(32, 0, 32, 32));
+		
+		// Entities
+		entities = new Array&lt;TileEntity&gt;();
+		
+		// Player character creation
+		character = new PlayerCharacter(tilesheet);
+		entities.push(character);
+		
+		// Map data
+		tileSize = 32;
+		map = new Array&lt;Array&lt;Int&gt;&gt;();
+		TileMap.create(map);
+		
+		// Game loop
+		stage.addEventListener(Event.ENTER_FRAME, everyFrame);
+	}
+	
+	private function everyFrame(evt:Event):Void {
+		var tileData:Array&lt;Float&gt; = [];
+		
+		// Terrain
+		for (row in 0...map.length) {
+			for (cell in 0...map[row].length) {
+				tileData = tileData.concat([tileSize * cell, tileSize * row, map[row][cell]]);
+			}
+		}
+		
+		// Entities
+		for (entity in entities) {
+			tileData = tileData.concat(entity.draw());
+		}
+		tilesheet.drawTiles(tilesheetCanvas.graphics, tileData);
+	}
+
+	/* SETUP */
+
+	public function new() 
+	{
+		super();	
+		addEventListener(Event.ADDED_TO_STAGE, added);
+	}
+
+	function added(e) 
+	{
+		removeEventListener(Event.ADDED_TO_STAGE, added);
+		stage.addEventListener(Event.RESIZE, resize);
+		#if ios
+		haxe.Timer.delay(init, 100); // iOS 6
+		#else
+		init();
+		#end
+	}
+	
+	public static function main() 
+	{
+		// static entry point
+		Lib.current.stage.align = flash.display.StageAlign.TOP_LEFT;
+		Lib.current.stage.scaleMode = flash.display.StageScaleMode.NO_SCALE;
+		Lib.current.addChild(new Main());
+	}
+}
+</code></pre>
+<p>Now we can draw a character entity and are almost ready to animate it.</p>
+<p>Next time we'll <a href="20_tile_based_game_tutorial_using_haxe_and_openfl_part_3.html">add movement and walking animations</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

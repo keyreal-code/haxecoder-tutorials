@@ -1,0 +1,174 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>34. HaxePunk shooting game tutorial: Part 10</title></head><body><h1>34. HaxePunk shooting game tutorial: Part 10</h1><h3>2014-10-05</h3><img class="thumb" src="img/69.png" alt="HaxePunk shooting game tutorial circle mask collision">
+<p>In this part collectible powerups will be added.</p>
+<p>These powerups will increase the life count of the player by 1 when touched by the player's ship.</p>
+<p>To handle this kind of collision, we'll use a Circle mask. Until now I've only covered how to use hitboxes, but HaxePunk offers more geometrical ways to detect collision between entities.</p>
+<p>Just like with hitboxes, we're using the collide() function to check for collision, but instead of applying a hitbox to an Entity, we'll apply a mask.</p><p>Create a new PowerUp.hx Entity subclass and add this code to it:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.HXP;
+import com.haxepunk.masks.Circle;
+
+/**
+ * Power up.
+ * @author Kirill Poletaev
+ */
+class PowerUp extends Entity
+{
+	private var speed:Int;
+	private var lifeCounter:LifeCounter;
+
+	public function new(g:Dynamic, lifeCounter:LifeCounter) 
+	{
+		super();
+		graphic = g;
+		speed = 5;
+		mask = new Circle(12, 12, 12);
+		this.lifeCounter = lifeCounter;
+	}
+	
+	override public function update() {
+		this.y += speed;
+		if (this.y &gt; HXP.height) {
+			scene.remove(this);
+		}
+		
+		var collidedEntity = collide(&quot;player&quot;, x, y);
+		if (collidedEntity != null) {
+			lifeCounter.updateLives(1);
+			scene.remove(this);
+		}
+	}
+	
+}</code></pre>
+<p>If you look at the constructor, you'll see that I create a new Circle() instance and apply it to this object's mask property. This means I've just setup a hit area in the shape of a circle to this entity.</p>
+<p>The rest of the code applies an image to the Entity and makes it move downwards at a steady speed. When the collision is detected between this Entity and the PlayerShip instance, the health of the player is increased by 1 and this powerup is removed from the scene.</p>
+<p>Now we just need to update MainScene.hx to spawn powerups at random intervals. I introduce 2 new variables - powerupInterval (with similar purpose to spawnInterval) and powerupGraphic (similar to enemyGraphic).</p>
+<p>Set initial values to both of these variables in the init() function, and add a spawning mechanism to the update() method.</p>
+<p>We end up with this code in MainScene.hx:</p>
+<pre><code class="haxe">package ;
+
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Scene;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+class MainScene extends Scene
+{
+	private var player:PlayerShip;
+	private var spawnInterval:Int;
+	private var powerupInterval:Int;
+	private var enemyGraphic:Image;
+	private var powerupGraphic:Image;
+	private var explosion:Explosion;
+	private var score:Score;
+	private var paused:Bool;
+	private var pausedText:PausedText;
+	private var lifeCounter:LifeCounter;
+	private var playing:Bool;
+	private var gameOverScreen:GameOverScreen;
+	
+	public function new()
+	{
+		super();
+		Input.define(&quot;up&quot;, [Key.UP, Key.W]);
+		Input.define(&quot;down&quot;, [Key.DOWN, Key.S]);
+		Input.define(&quot;left&quot;, [Key.LEFT, Key.A]);
+		Input.define(&quot;right&quot;, [Key.RIGHT, Key.D]);
+		
+		var atlas:TextureAtlas = TextureAtlas.loadTexturePacker(&quot;atlas/atlas.xml&quot;);
+		enemyGraphic = new Image(atlas.getRegion(&quot;enemyShip&quot;));
+		powerupGraphic = new Image(atlas.getRegion(&quot;powerup&quot;));
+		
+		player = new PlayerShip(atlas);
+		add(player);
+		spawnInterval = Math.round(Math.random() * 50) + 50;
+		powerupInterval = Math.round(Math.random() * 200) + 150;
+		
+		explosion = new Explosion(atlas);
+		add(explosion);
+		
+		score = new Score();
+		add(score);
+		
+		paused = false;
+		pausedText = new PausedText();
+		add(pausedText);
+		pausedText.visible = false;
+		
+		lifeCounter = new LifeCounter(new Image(atlas.getRegion(&quot;heart&quot;)));
+		add(lifeCounter);
+		lifeCounter.moveTo(10, 10);
+		
+		playing = true;
+		gameOverScreen = new GameOverScreen();
+		add(gameOverScreen);
+		gameOverScreen.visible = false;
+	}
+	
+	override public function update() {	
+		if (Input.pressed(Key.P)) {
+			togglePause();
+		}
+		
+		if (paused) return;
+		
+		super.update();
+		
+		if (!playing &amp;&amp; Input.pressed(Key.ENTER)) {
+			restart();
+		}
+		
+		if (!playing) return;
+		
+		spawnInterval--;
+		if (spawnInterval == 0) {
+			var enemy = new EnemyShip(enemyGraphic, explosion, score, lifeCounter);
+			add(enemy);
+			enemy.x = Math.round(Math.random() * (HXP.width-64));
+			enemy.y = -50;
+			spawnInterval = Math.round(Math.random() * 20)+30;
+		}
+		powerupInterval--;
+		if (powerupInterval == 0) {
+			var powerup = new PowerUp(powerupGraphic, lifeCounter);
+			add(powerup);
+			powerup.x = Math.round(Math.random() * (HXP.width-64));
+			powerup.y = -50;
+			powerupInterval = Math.round(Math.random() * 200) + 150;
+		}
+	}
+	
+	public function togglePause() {
+		paused = !paused;
+		pausedText.visible = !pausedText.visible;
+	}
+	
+	public function gameOver() {
+		playing = false;
+		var i:Int;
+		for(i in 0...30){
+			explosion.explode(player.x, player.y);
+		}
+		player.active = false;
+		player.collidable = false;
+		player.visible = false;
+		gameOverScreen.visible = true;
+	}
+	
+	public function restart() {
+		playing = true;
+		player.active = true;
+		player.collidable = true;
+		player.visible = true;
+		lifeCounter.updateLives(3);
+		player.x = HXP.width/2 - player.width/2;
+		player.y = HXP.height - 80;
+		gameOverScreen.visible = false;
+		score.reset();
+	}
+	
+ }</code></pre>
+<p>This is how you use a Circle mask to detect collision with round objects. There are other types of masks in HaxePunk that you can use similarly.</p>
+<p>In the next part we'll see <a href="35_haxepunk_shooting_game_tutorial_part_11.html">how to save the highscore locally</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>

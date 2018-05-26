@@ -1,0 +1,25 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>37. HaxeFlixel tutorial: Getting started</title></head><body><h1>37. HaxeFlixel tutorial: Getting started</h1><h3>2014-10-08</h3><img class="thumb" alt="HaxeFlixel getting started" src="img/72.png">
+<p>HaxeFlixel is another popular 2D game framework for Haxe and OpenFL.</p>
+<p>Just like HaxePunk, HaxeFlixel is an open-source library and a successor to an AS3 game framework called Flixel.</p>
+<p>In this tutorial I'll show you how to install HaxeFlixel and create new projects using this frameworks.</p>
+<p>Obviously, you'll need to have Haxe and OpenFL installed before you proceed. If you don't have those yet, follow <a href="2_getting_started_with_haxe.html">this guide on getting started with Haxe and OpenFL</a>.</p><p>There are several ways to install HaxeFlixel.</p>
+<p>One way is to grab the latest stable code from the official <a href="http://haxeflixel.com/download/">download</a> page.</p>
+<p>If you're looking for development builds with all the latest updates, check out the <a href="https://github.com/HaxeFlixel/flixel">GitHub repository</a>.</p>
+<p>The easiest and the most recommended way, however, is to use the haxelib command tool. Installing HaxeFlixel using haxelib is done by downloading a package called flixel-tools.</p>
+<p>Use the following commands:</p>
+<pre><code>haxelib install flixel-tools
+haxelib run flixel-tools setup</code></pre>
+<p>This will download and install all the necessary flixel core files, as well as offer to download demos and templates.</p>
+<p>You can also download the templates separately <a href="http://haxeflixel.com/download/">here</a>.</p>
+<p>You can use any of the supported IDEs, I recommend FlashDevelop. After installing the HaxeFlixel template it will show up in the Project/New Project menu:</p>
+<img class="center" alt="HaxeFlixel project FlashDevelop" src="img/73.png">
+<p>Creating a new project using a HaxeFlixel template in any IDE will create a directory with a number of files. The project tree should look like this:</p>
+<img class="center" alt="HaxeFlixel project tree" src="img/74.png">
+<p>You'll notice a number of classes in the src folder, as well as a project.xml file in the root.</p>
+<p>This file is the descriptor where you can setup different application settings, including the app title and window size. All the imported libraries have to be listed here as well. You'll notice that HaxeFlixel is included as the default library.</p>
+<p>The main document class of the project is the Main.hx file. Here you can change some of the initialization variables, but the rest of the code will in most cases remain unchanged.</p>
+<p>HaxeFlixel employs a state machine. This means that the user can see one state at a time, and it is possible to easily switch from one state to another. This way you can have separate states for the main menu and actual game screen.</p>
+<p>In fact, both of these scenarios are already pre-configured for you - you'll find that the MenuState and PlayState classes are made specifically for that purpose.</p>
+<p>HaxeFlixel also creates a Reg class for you, which can store global objects for easy access. You can access these objects from any class, since they are static variables.</p>
+<p>Of course, since this library is built on top of OpenFL, you can use all the OpenFL goodies like the Assets class. HaxeFlixel template creates an assets directory for you to store images, music, sounds and raw data.</p>
+<p>We will take a closer look at the most important aspects of this library in my next tutorial series, where I will show you how to <a href="38_haxeflixel_rpg_tutorial_part_1.html">create an RPG using HaxeFlixel</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>

@@ -1,0 +1,26 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>13. Assets in OpenFL: embedding images, sounds and more</title></head><body><h1>13. Assets in OpenFL: embedding images, sounds and more</h1><h3>2014-09-14</h3><img class="thumb" alt="Assets in OpenFL Haxe" src="img/30.png">
+<p>Assets include any type of raw resource that you may want to embed into your game or app. OpenFL has a built-in system for embedding and managing sounds, images, fonts and other types of files into your project.</p>
+<p>The process starts with the application.xml file, where the paths to asset directories is located. This is also where you can specify custom parameters for filtering assets for different compiler targets, for example.</p>
+<p>Each project directory has an assets subdirectory, which is used for storing all the assets to be embedded. Let's say we have an img folder there that we want to embed, so we add this line to application.xml:</p><pre><code class="xml">&lt;assets path=&quot;assets/img&quot; rename=&quot;img&quot; /&gt;</code></pre>
+<p>Say that we have another folder called audio, where we store audio files. We can add another line for embedding everything in that folder to our project the same way. We can also specify the type of the media that we're embedding - audio in this case:</p>
+<pre><code class="xml">&lt;assets path=&quot;assets/audio&quot; rename=&quot;audio&quot; type=&quot;audio&quot; /&gt;</code></pre>
+<p>The Haxe compiler will embed all these resources automatically. All we need to do is load them in our code using the static Assets class. The Assets class has many different methods for loading different kind of media, such as getBitmapData() for images, getSound() or getMusic() for audio, getFont() for fonts, etc.</p>
+<p>We need to specify the path to the asset when we load it:</p>
+<pre><code class="haxe">var bd:BitmapData = Assets.getBitmapData(&quot;img/logo.png&quot;);
+var b:Bitmap = new Bitmap(bd);
+addChild(b);</code></pre>
+<p>We can load audio in a similar way:</p>
+<pre><code class="haxe">var sound:Sound = Assets.getSound("audio/song.wav");
+sound.play();</code></pre>
+<p>A bit more advanced example, which loads the sound into a SoundChannel object, which has more control over the playback. We can, for example, create a custom SoundTransform object and change the volume of the played sound:</p>
+<pre><code class="haxe">var sound:Sound = Assets.getSound("audio/song.wav");
+var channel:SoundChannel = sound.play();
+channel.soundTransform = new SoundTransform(0.1);
+</code></pre>
+<p>OpenFL currently supports 3 audio formats - wav, ogg and mp3. The wav file format is supported in all compiler targets, but might not be suitable for all needs, since the file size is big. The ogg file format can't be played in Flash. Mp3, however, can only be played in Flash projects. This is because the mp3 format is proprietary and Adobe has an agreement with the owners of the format so that the developers don't have to pay royalties when using it in Flash projects.</p>
+<p>Because of this, if you're targeting multiple platforms, including Flash, you might want to embed mp3 version of a song when exporting to Flash, and ogg in all other cases.</p>
+<p>This can be done in the application.xml file by creating conditions:</p>
+<pre><code class="haxe">&lt;asset path=&quot;assets/audio&quot; rename=&quot;sound&quot; include=&quot;*.ogg&quot; unless=&quot;flash&quot; /&gt;
+&lt;asset path=&quot;assets/audio&quot; rename=&quot;sound&quot; include=&quot;*.mp3&quot; if=&quot;flash&quot; /&gt;</code></pre>
+<p>This way the same sounds can be embedded in different formats for different platforms.</p>
+<p>If you found this helpful, you might want to check out my other tutorials. Additionally, consider subscribing to my free newsletter for updates and bonus content!</p><footer>&copy; Kirill Poletaev</footer></body></html>

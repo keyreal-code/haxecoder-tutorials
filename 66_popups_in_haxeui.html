@@ -1,0 +1,41 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>66. Popups in HaxeUI</title></head><body><h1>66. Popups in HaxeUI</h1><h3>2014-11-11</h3><img alt="HaxeUI popups" class="thumb" src="img/130.png">
+<p>Popup windows can be used for various purposes, sometimes just requiring the user's confirmation of an action, other times telling them to wait until a process is done.</p>
+<p>HaxeUI offers a very easy way to create and customize popups. There are 5 popup types that we can create - simple popups, list popups, busy popups, calendar popups and custom popups.</p>
+<p>All popup activities are managed using the PopupManager class.</p>
+<p>Let's start by creating a simple "busy" popup, which tells the user to wait, and disappears after 5 seconds.</p><p>We can do this by called the PopupManager's static showBusy() method and passing the following parameters:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	PopupManager.instance.showBusy(&quot;Please wait&quot;, 5000, &quot;Busy popup&quot;);
+});</code></pre>
+<img alt="HaxeUI busy popup" class="center" src="img/131.png">
+<p>The syntax is pretty straight forward, and all the other popup types can be called out using a similar approach.</p>
+<p>Here's a bit more complex example of a simple popup with 2 buttons and a button click listener:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	PopupManager.instance.showSimple(&quot;Test message&quot;, &quot;Simple popup&quot;,
+		{ buttons: [PopupButton.OK, PopupButton.CANCEL] },
+		function(btn:Dynamic) {
+			if (Std.is(btn, Int)) {
+				switch(btn) {
+					case PopupButton.OK: trace(&quot;OK&quot;);
+					case PopupButton.CANCEL: trace(&quot;CANCEL&quot;);
+				}
+			}
+		} 
+	);
+});</code></pre>
+<img alt="HaxeUI busy popup" class="center" src="img/132.png">
+<p>It's easy to guess that the "custom" popup type is the most customizable one. When using custom popups, we can set the layout of the window to whatever we want. This is achieved very easily, because all we need to do is pass a component or a container as the first parameter of the showCustom() method.</p>
+<p>For example, let's take the XML layout from the <a href="65_ids_and_event_listeners_in_haxeui.html">previous tutorial</a> and display it in a popup:</p>
+<pre><code class="haxe">Toolkit.theme = new GradientTheme();
+Toolkit.init();
+
+Toolkit.openFullscreen(function(root:Root) {
+	var view:IDisplayObject = Toolkit.processXmlResource(&quot;layouts/mainLayout.xml&quot;);
+	PopupManager.instance.showCustom(view, &quot;Custom popup&quot;, { buttons: [PopupButton.OK, PopupButton.CANCEL] });
+});</code></pre>
+<img alt="HaxeUI busy popup" class="center" src="img/133.png"><footer>&copy; Kirill Poletaev</footer></body></html>

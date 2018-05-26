@@ -1,0 +1,159 @@
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>30. HaxePunk shooting game tutorial: Part 6</title></head><body><h1>30. HaxePunk shooting game tutorial: Part 6</h1><h3>2014-10-01</h3><img alt="HaxePunk shooting game tutorial sound" class="thumb" src="img/64.png">
+<p>In this part we'll talk about audio in HaxePunk.</p>
+<p>HaxePunk employs a simple to use sound system makes it easy to play sounds and customize their playback.</p>
+<p>In this case, I am going to add 3 sounds to the game - a shooting sound, a hitting sound and an explosion sound.</p>
+<p>I'm also going to take advantage of HaxePunk's Sfx class to pan the sounds for a stereo effect.</p>
+<p>To get started, we first need to get some sound resources.</p><p>For this tutorial I created 3 sounds which you can <a href="img/65.rar">download here</a>.</p>
+<p>Put all the audio files into your assets/audio/ directory.</p>
+<p>Adding and playing the sounds is easy. Here's the code of EnemyShip.hx, which will play the explosion and hit sounds:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.HXP;
+import com.haxepunk.graphics.Emitter;
+import com.haxepunk.Sfx;
+
+/**
+ * Enemy ship entity.
+ * @author Kirill Poletaev
+ */
+class EnemyShip extends Entity
+{
+	private var speed:Int;
+	private var health:Int;
+	private var explosion:Explosion;
+	private var score:Score;
+	private var sfx_explosion:Sfx;
+	private var sfx_hit:Sfx;
+
+	public function new(g:Dynamic, explosion:Explosion, score:Score) 
+	{
+		super();
+		graphic = g;
+		this.explosion = explosion;
+		this.score = score;
+		speed = Math.ceil(Math.random() * 3);
+		setHitbox(64, 48, 0, 0);
+		health = 5;
+		
+		sfx_explosion = new Sfx(&quot;audio/explosion.wav&quot;);
+		sfx_hit = new Sfx(&quot;audio/hit.wav&quot;);
+	}
+	
+	override public function update() {
+		this.y += speed;
+		if (this.y &gt; HXP.height) {
+			scene.remove(this);
+		}
+		var collidedEntity = collide(&quot;bullet&quot;, x, y);
+		if (collidedEntity != null) {
+			health--;
+			scene.remove(collidedEntity);
+			explosion.explode(x, y);
+			sfx_hit.play(1, (x/HXP.width)*1.6 - 0.8);
+		}
+		if (health == 0) {
+			var i:Int = 0;
+			while(i&lt;3){
+				explosion.explode(x, y);
+				i++;
+			}
+			score.add(1);
+			sfx_explosion.play(1, (x/HXP.width)*1.6 - 0.8);
+			scene.remove(this);
+		}
+	}
+	
+}</code></pre>
+<p>As you can see, I create a separate Sfx class instance for each sound type. The path to the sound is declared in the constructor of the Sfx class.</p>
+<p>Whenever a sound needs to be played, its play() method is called. The play method has 2 parameters - volume (ranged 0 - 1) and pan (ranged -1 - 1).</p>
+<p>Take a look at the following line:</p>
+<pre><code class="haxe">sfx_explosion.play(1, (x/HXP.width)*1.6 - 0.8);</code></pre>
+<p>Notice the expression I've put as the panning parameter. This way I reset the panning value of the sound every time it is played, and it is now ranged from -0.8 to 0.8.</p>
+<p>The reason I do this is because I want the sound to give an effect of being played at a certain location, for example, if a ship explodes on the far right side of the screen - the sound has to be played from the right speaker louder than from the left. This creates a believable stereo effect.</p>
+<p>Similarly to the hit and explosion sounds, I play the shooting sound when the player shoots a bullet in PlayerShip.hx:</p>
+<pre><code class="haxe">package ;
+import com.haxepunk.Entity;
+import com.haxepunk.graphics.atlas.AtlasRegion;
+import com.haxepunk.graphics.atlas.TextureAtlas;
+import com.haxepunk.graphics.Image;
+import com.haxepunk.HXP;
+import com.haxepunk.Sfx;
+import com.haxepunk.utils.Input;
+import com.haxepunk.utils.Key;
+
+/**
+ * Player ship.
+ * @author Kirill Poletaev
+ */
+class PlayerShip extends Entity
+{
+	private var movespeed:Int;
+	private var bulletDelay:Int;
+	private var currentDelay:Int;
+	private var atlas:TextureAtlas;
+	private var alternateCannon:Bool;
+	private var bulletImage:Image;
+	private var sfx_shoot:Sfx;
+
+	public function new(atlas:TextureAtlas) 
+	{
+		super();
+		graphic = new Image(atlas.getRegion(&quot;playerShip&quot;));
+		movespeed = 8;
+		width = 64;
+		height = 48;
+		x = HXP.width/2 - width/2;
+		y = HXP.height - 80;
+		bulletDelay = 5;
+		currentDelay = 0;
+		this.atlas = atlas;
+		alternateCannon = true;
+		bulletImage = new Image(atlas.getRegion(&quot;bullet&quot;));
+		
+		sfx_shoot = new Sfx(&quot;audio/shoot.wav&quot;);
+	}
+	
+	override public function update() {
+		if (Input.check(&quot;down&quot;)) {
+			moveBy(0, movespeed);
+		}
+		if (Input.check(&quot;up&quot;)) {
+			moveBy(0, -movespeed);
+		}
+		if (Input.check(&quot;right&quot;)) {
+			moveBy(movespeed, 0);
+		}
+		if (Input.check(&quot;left&quot;)) {
+			moveBy(-movespeed, 0);
+		}
+		
+		if (this.x &lt; 0) this.x = 0;
+		if (this.y &lt; 0) this.y = 0;
+		if (this.x &gt; HXP.width - width) this.x = HXP.width - width;
+		if (this.y &gt; HXP.height - height) this.y = HXP.height - height;
+		
+		if (Input.check(Key.SPACE)) {
+			if (currentDelay == 0) {
+				currentDelay = bulletDelay;
+				var b:Bullet = new Bullet(bulletImage);
+				scene.add(b);
+				if(alternateCannon){
+					b.x = x;
+				}else {
+					b.x = x + 50;
+				}
+				alternateCannon = !alternateCannon;
+				sfx_shoot.play(0.7, (x/HXP.width)*1.6 - 0.8);
+				b.y = y;
+			}
+		}
+		if (currentDelay &gt; 0) {
+			currentDelay--;
+		}
+	}
+	
+}</code></pre>
+<p>Notice that this time I changed the volume of the sound from 1 to 0.7.</p>
+<p>And this is how you handle sounds in HaxePunk! Easy.</p>
+<p>Note that you can also change the volume and panning of all the audio in the game using HXP.volume and HXP.pan properties.</p>
+<p>We'll add the <a href="31_haxepunk_shooting_game_tutorial_part_7.html">ability to pause the game in the next part</a>!</p><footer>&copy; Kirill Poletaev</footer></body></html>
