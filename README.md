@@ -4,7 +4,7 @@ This includes a general introduction into the Haxe programming language and some
 You can view all the published articles in a simplified format in this repository. Readers' comments from the original website are not included.
 # Credits
 Author: Kirill Poletaev
-[https://kircode.com](kircode.com)
+[kircode.com](https://kircode.com)
 # Known issues
 Some tutorials may be outdated in the sense that newer versions of the used libraries may not always be backwards compatible.
 # Index
