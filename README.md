@@ -2,6 +2,9 @@
 This is an archive of my Haxe tutorials, previously hosted on haxecoder.com. The focus of the tutorials is game development.
 This includes a general introduction into the Haxe programming language and some of its most popular libraries. The tutorials are written in a "follow by example" style, and include multiple series on creating games of different genres from scratch. 
 You can view all the published articles in a simplified format in this repository. Readers' comments from the original website are not included.
+
+[Tutorial Index](https://keyreal-code.github.io/haxecoder-tutorials/)
+
 # Credits
 Author: Kirill Poletaev
 [kircode.com](https://kircode.com)
