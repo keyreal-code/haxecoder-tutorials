@@ -1,213 +1,425 @@
-<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>08. How to make a Pong game in Haxe and OpenFL: Part 2</title></head><body><h1>08. How to make a Pong game in Haxe and OpenFL: Part 2</h1><h3>2014-09-09</h3><img src="img/21.png" class="thumb" alt="Haxe OpenFL Pong game"><p>In this part of the tutorial series we implement a basic game state system, display score and add functionality for the Spacebar key to start the game.</p>
-<p>Game state systems are simple state machines, which are used to determine what to currently display and what functionality to provide. In our case, there will be just two game states - Paused and Playing. In a bit more complex games you'll most likely also have states like Main Menu, Credits, etc.</p>
-<p>Since there is a fixed number of possible states, a enum is perfect for providing these values.</p><p>Let's create this enum in our Main.hx file the following way:</p>
-<pre><code class="haxe">enum GameState {
-	Paused;
-	Playing;
-}</code></pre>
-<p>If you don't remember what enums are, take a look at my <a href="6_enum_types_in_haxe.html">enumerated type tutorial</a>.</p>
-<p>Since we will need to store the value of the currently active game state, and since there can only be one active state, create this variable in the Main class:</p>
-<pre><code class="haxe">private var currentGameState:GameState;</code></pre>
-<p>We're also going to add 2 integer variables for storing the player's and the computer opponent's score:</p>
-<pre><code class="haxe">private var scorePlayer:Int;
-private var scoreAI:Int;</code></pre>
-<p>I'm planning to have 2 text messages on the screen - one will be always visible and display the current score, the second will show an instructional message while the game is paused and disappear when the game is in process.</p>
-<p>We'll need to declare 2 TextField typed variables:</p>
-<pre><code class="haxe">private var scoreField:TextField;
-private var messageField:TextField;</code></pre>
-<p>Note - when using classes that are outside of the current package, you'll need to import them. The IDE will usually import them automatically if you use autocompletion. In FlashDevelop's case, right after you type TextField, hit Ctrl+1 and the needed class will be imported. The cursor caret needs to be somewhere in the class' name, or right after it.</p>
-<p>The imported classes will be added right below the package declaration line, and look like this:</p>
-<pre><code class="haxe">import openfl.text.TextField;</code></pre>
-<p>Now let's add code to display the 2 text messages. TextFields are enough to display text, but to format the text we need to create TextFormat objects. Since we only need to apply the format once, create them as local variables. Go to the init() function and add the following lines:</p>
-<pre><code class="haxe">var scoreFormat:TextFormat = new TextFormat("Verdana", 24, 0xbbbbbb, true);
-scoreFormat.align = TextFormatAlign.CENTER;
-
-scoreField = new TextField();
-addChild(scoreField);
-scoreField.width = 500;
-scoreField.y = 30;
-scoreField.defaultTextFormat = scoreFormat;
-scoreField.selectable = false;
-</code></pre>
-<p>The piece of code is self explanatory - the format is used to set the font, its size, color and boldness, the TextField attributes are used to position the field and apply the formatting. We also turn off the mouse selection for this text field.</p>
-<p>Next, add the second text field in the same way:</p>
-<pre><code class="haxe">var messageFormat:TextFormat = new TextFormat("Verdana", 18, 0xbbbbbb, true);
-messageFormat.align = TextFormatAlign.CENTER;
-
-messageField = new TextField();
-addChild(messageField);
-messageField.width = 500;
-messageField.y = 450;
-messageField.defaultTextFormat = messageFormat;
-messageField.selectable = false;
-messageField.text = "Press SPACE to start\nUse ARROW KEYS to move your platform";
-</code></pre>
-<p>Next, let's set both score values to 0:</p>
-<pre><code class="haxe">scorePlayer = 0;
-scoreAI = 0;</code></pre>
-<p>You may have noticed that we do not set the actual text value of the first field. That's because that text will be rewritten every time the score changes, so it is a good idea to turn it into a function:</p>
-<pre><code class="haxe">private function updateScore():Void {
-	scoreField.text = scorePlayer + ":" + scoreAI;
-}
-</code></pre>
-<p>Let's now add a function that will change the game state. The function will need to receive a state value, set the current state to that value, and make the necessary changes when one state turns into another.</p>
-<p>In this case, we will make the message text field visible or invisible based on the game state:</p>
-<pre><code class="haxe">private function setGameState(state:GameState):Void {
-	currentGameState = state;
-	updateScore();
-	if (state == Paused) {
-		messageField.alpha = 1;
-	}else {
-		messageField.alpha = 0;
-	}
-}
-</code></pre>
-<p>We can now call this method in the init() function to set the initial state to Paused:</p>
-<pre><code class="haxe">setGameState(Paused);</code></pre>
-<p>Now let's add a keyboard event listener. This will let us handle key presses. Add this listener in the init() method:</p>
-<pre><code class="haxe">stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);</code></pre>
-<p>As you can see, we add this listener to the stage object, set the event type to KEY_DOWN and set the handler function to keyDown.</p>
-<p>We now need to create this keyDown function. Event handlers usually receive an event object as their parameter, in this case it's a KeyboardEvent. We can check the keyCode property of that object to see what key was pressed. The keycode of the Spacebar is 32.</p>
-<p>Check if the pressed key is spacebar and if the current state is Paused. If both of those conditions are true, change the game state to Playing:</p>
-<pre><code class="haxe">private function keyDown(event:KeyboardEvent):Void {
-	if (currentGameState == Paused && event.keyCode == 32) {
-		setGameState(Playing);
-	}
-}</code></pre>
-<p>Here is the full Main.hx code:</p>
-<pre><code class="haxe">package ;
-
-import openfl.display.Sprite;
-import openfl.events.Event;
-import openfl.Lib;
-import openfl.events.KeyboardEvent;
-import openfl.text.TextField;
-import openfl.text.TextFormat;
-import openfl.text.TextFormatAlign;
-
-enum GameState {
-	Paused;
-	Playing;
-}
-
-class Main extends Sprite 
-{
-	var inited:Bool;
-	
-	private var platform1:Platform;
-	private var platform2:Platform;
-	private var ball:Ball;
-	private var scorePlayer:Int;
-	private var scoreAI:Int;
-	private var scoreField:TextField;
-	private var messageField:TextField;
-	private var currentGameState:GameState;
-
-	/* ENTRY POINT */
-	
-	function resize(e) 
-	{
-		if (!inited) init();
-		// else (resize or orientation change)
-	}
-	
-	function init() 
-	{
-		if (inited) return;
-		inited = true;
-		
-		platform1 = new Platform();
-		platform1.x = 5;
-		platform1.y = 200;
-		this.addChild(platform1);
-		
-		platform2 = new Platform();
-		platform2.x = 480;
-		platform2.y = 200;
-		this.addChild(platform2);
-		
-		ball = new Ball();
-		ball.x = 250;
-		ball.y = 250;
-		this.addChild(ball);
-		
-		var scoreFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 24, 0xbbbbbb, true);
-		scoreFormat.align = TextFormatAlign.CENTER;
-		
-		scoreField = new TextField();
-		addChild(scoreField);
-		scoreField.width = 500;
-		scoreField.y = 30;
-		scoreField.defaultTextFormat = scoreFormat;
-		scoreField.selectable = false;
-		
-		var messageFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 18, 0xbbbbbb, true);
-		messageFormat.align = TextFormatAlign.CENTER;
-		
-		messageField = new TextField();
-		addChild(messageField);
-		messageField.width = 500;
-		messageField.y = 450;
-		messageField.defaultTextFormat = messageFormat;
-		messageField.selectable = false;
-		messageField.text = &quot;Press SPACE to start\nUse ARROW KEYS to move your platform&quot;;
-		
-		scorePlayer = 0;
-		scoreAI = 0;
-		setGameState(Paused);
-		
-		stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
-	}
-	
-	private function setGameState(state:GameState):Void {
-		currentGameState = state;
-		updateScore();
-		if (state == Paused) {
-			messageField.alpha = 1;
-		}else {
-			messageField.alpha = 0;
-		}
-	}
-	
-	private function keyDown(event:KeyboardEvent):Void {
-		if (currentGameState == Paused &amp;&amp; event.keyCode == 32) {
-			setGameState(Playing);
-		}
-	}
-	
-	private function updateScore():Void {
-		scoreField.text = scorePlayer + &quot;:&quot; + scoreAI;
-	}
-
-	/* SETUP */
-
-	public function new() 
-	{
-		super();	
-		addEventListener(Event.ADDED_TO_STAGE, added);
-	}
-
-	function added(e) 
-	{
-		removeEventListener(Event.ADDED_TO_STAGE, added);
-		stage.addEventListener(Event.RESIZE, resize);
-		#if ios
-		haxe.Timer.delay(init, 100); // iOS 6
-		#else
-		init();
-		#end
-	}
-	
-	public static function main() 
-	{
-		// static entry point
-		Lib.current.stage.align = openfl.display.StageAlign.TOP_LEFT;
-		Lib.current.stage.scaleMode = openfl.display.StageScaleMode.NO_SCALE;
-		Lib.current.addChild(new Main());
-		//
-	}
-}
-</code></pre>
-<p>If you test your project now, you'll see something like this:</p>
-<img src="img/22.png" class="center" alt="Haxe OpenFL Pong game">
-<p>Pressing the spacebar in your game will change the state from Paused to Playing. In the next part of the series, we will <a href="9_how_to_make_a_pong_game_in_haxe_and_openfl_part_3.html">add a game loop and player-controlled platform movement</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>
+<html><head><style>body{font-family:Arial, Helvetica, sans-serif; padding:20px;}pre{ background:#eee; padding:20px; }footer{color:#666; border-top:1px solid #666; margin-top:20px; padding-top:20px; width:100%;}</style><title>08. How to make a Pong game in Haxe and OpenFL: Part 2</title></head><body><h1>08. How to make a Pong game in Haxe and OpenFL: Part 2</h1><h3>2014-09-09</h3><img src="img/21.png" class="thumb" alt="Haxe OpenFL Pong game"><p>In this part of the tutorial series we implement a basic game state system, display score and add functionality for the Spacebar key to start the game.</p>
+
+<p>Game state systems are simple state machines, which are used to determine what to currently display and what functionality to provide. In our case, there will be just two game states - Paused and Playing. In a bit more complex games you'll most likely also have states like Main Menu, Credits, etc.</p>
+
+<p>Since there is a fixed number of possible states, a enum is perfect for providing these values.</p><p>Let's create this enum in our Main.hx file the following way:</p>
+
+<pre><code class="haxe">enum GameState {
+
+	Paused;
+
+	Playing;
+
+}</code></pre>
+
+<p>If you don't remember what enums are, take a look at my <a href="6_enum_types_in_haxe.html">enumerated type tutorial</a>.</p>
+
+<p>Since we will need to store the value of the currently active game state, and since there can only be one active state, create this variable in the Main class:</p>
+
+<pre><code class="haxe">private var currentGameState:GameState;</code></pre>
+
+<p>We're also going to add 2 integer variables for storing the player's and the computer opponent's score:</p>
+
+<pre><code class="haxe">private var scorePlayer:Int;
+
+private var scoreAI:Int;</code></pre>
+
+<p>I'm planning to have 2 text messages on the screen - one will be always visible and display the current score, the second will show an instructional message while the game is paused and disappear when the game is in process.</p>
+
+<p>We'll need to declare 2 TextField typed variables:</p>
+
+<pre><code class="haxe">private var scoreField:TextField;
+
+private var messageField:TextField;</code></pre>
+
+<p>Note - when using classes that are outside of the current package, you'll need to import them. The IDE will usually import them automatically if you use autocompletion. In FlashDevelop's case, right after you type TextField, hit Ctrl+1 and the needed class will be imported. The cursor caret needs to be somewhere in the class' name, or right after it.</p>
+
+<p>The imported classes will be added right below the package declaration line, and look like this:</p>
+
+<pre><code class="haxe">import openfl.text.TextField;</code></pre>
+
+<p>Now let's add code to display the 2 text messages. TextFields are enough to display text, but to format the text we need to create TextFormat objects. Since we only need to apply the format once, create them as local variables. Go to the init() function and add the following lines:</p>
+
+<pre><code class="haxe">var scoreFormat:TextFormat = new TextFormat("Verdana", 24, 0xbbbbbb, true);
+
+scoreFormat.align = TextFormatAlign.CENTER;
+
+
+
+scoreField = new TextField();
+
+addChild(scoreField);
+
+scoreField.width = 500;
+
+scoreField.y = 30;
+
+scoreField.defaultTextFormat = scoreFormat;
+
+scoreField.selectable = false;
+
+</code></pre>
+
+<p>The piece of code is self explanatory - the format is used to set the font, its size, color and boldness, the TextField attributes are used to position the field and apply the formatting. We also turn off the mouse selection for this text field.</p>
+
+<p>Next, add the second text field in the same way:</p>
+
+<pre><code class="haxe">var messageFormat:TextFormat = new TextFormat("Verdana", 18, 0xbbbbbb, true);
+
+messageFormat.align = TextFormatAlign.CENTER;
+
+
+
+messageField = new TextField();
+
+addChild(messageField);
+
+messageField.width = 500;
+
+messageField.y = 450;
+
+messageField.defaultTextFormat = messageFormat;
+
+messageField.selectable = false;
+
+messageField.text = "Press SPACE to start\nUse ARROW KEYS to move your platform";
+
+</code></pre>
+
+<p>Next, let's set both score values to 0:</p>
+
+<pre><code class="haxe">scorePlayer = 0;
+
+scoreAI = 0;</code></pre>
+
+<p>You may have noticed that we do not set the actual text value of the first field. That's because that text will be rewritten every time the score changes, so it is a good idea to turn it into a function:</p>
+
+<pre><code class="haxe">private function updateScore():Void {
+
+	scoreField.text = scorePlayer + ":" + scoreAI;
+
+}
+
+</code></pre>
+
+<p>Let's now add a function that will change the game state. The function will need to receive a state value, set the current state to that value, and make the necessary changes when one state turns into another.</p>
+
+<p>In this case, we will make the message text field visible or invisible based on the game state:</p>
+
+<pre><code class="haxe">private function setGameState(state:GameState):Void {
+
+	currentGameState = state;
+
+	updateScore();
+
+	if (state == Paused) {
+
+		messageField.alpha = 1;
+
+	}else {
+
+		messageField.alpha = 0;
+
+	}
+
+}
+
+</code></pre>
+
+<p>We can now call this method in the init() function to set the initial state to Paused:</p>
+
+<pre><code class="haxe">setGameState(Paused);</code></pre>
+
+<p>Now let's add a keyboard event listener. This will let us handle key presses. Add this listener in the init() method:</p>
+
+<pre><code class="haxe">stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);</code></pre>
+
+<p>As you can see, we add this listener to the stage object, set the event type to KEY_DOWN and set the handler function to keyDown.</p>
+
+<p>We now need to create this keyDown function. Event handlers usually receive an event object as their parameter, in this case it's a KeyboardEvent. We can check the keyCode property of that object to see what key was pressed. The keycode of the Spacebar is 32.</p>
+
+<p>Check if the pressed key is spacebar and if the current state is Paused. If both of those conditions are true, change the game state to Playing:</p>
+
+<pre><code class="haxe">private function keyDown(event:KeyboardEvent):Void {
+
+	if (currentGameState == Paused && event.keyCode == 32) {
+
+		setGameState(Playing);
+
+	}
+
+}</code></pre>
+
+<p>Here is the full Main.hx code:</p>
+
+<pre><code class="haxe">package ;
+
+
+
+import openfl.display.Sprite;
+
+import openfl.events.Event;
+
+import openfl.Lib;
+
+import openfl.events.KeyboardEvent;
+
+import openfl.text.TextField;
+
+import openfl.text.TextFormat;
+
+import openfl.text.TextFormatAlign;
+
+
+
+enum GameState {
+
+	Paused;
+
+	Playing;
+
+}
+
+
+
+class Main extends Sprite 
+
+{
+
+	var inited:Bool;
+
+	
+
+	private var platform1:Platform;
+
+	private var platform2:Platform;
+
+	private var ball:Ball;
+
+	private var scorePlayer:Int;
+
+	private var scoreAI:Int;
+
+	private var scoreField:TextField;
+
+	private var messageField:TextField;
+
+	private var currentGameState:GameState;
+
+
+
+	/* ENTRY POINT */
+
+	
+
+	function resize(e) 
+
+	{
+
+		if (!inited) init();
+
+		// else (resize or orientation change)
+
+	}
+
+	
+
+	function init() 
+
+	{
+
+		if (inited) return;
+
+		inited = true;
+
+		
+
+		platform1 = new Platform();
+
+		platform1.x = 5;
+
+		platform1.y = 200;
+
+		this.addChild(platform1);
+
+		
+
+		platform2 = new Platform();
+
+		platform2.x = 480;
+
+		platform2.y = 200;
+
+		this.addChild(platform2);
+
+		
+
+		ball = new Ball();
+
+		ball.x = 250;
+
+		ball.y = 250;
+
+		this.addChild(ball);
+
+		
+
+		var scoreFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 24, 0xbbbbbb, true);
+
+		scoreFormat.align = TextFormatAlign.CENTER;
+
+		
+
+		scoreField = new TextField();
+
+		addChild(scoreField);
+
+		scoreField.width = 500;
+
+		scoreField.y = 30;
+
+		scoreField.defaultTextFormat = scoreFormat;
+
+		scoreField.selectable = false;
+
+		
+
+		var messageFormat:TextFormat = new TextFormat(&quot;Verdana&quot;, 18, 0xbbbbbb, true);
+
+		messageFormat.align = TextFormatAlign.CENTER;
+
+		
+
+		messageField = new TextField();
+
+		addChild(messageField);
+
+		messageField.width = 500;
+
+		messageField.y = 450;
+
+		messageField.defaultTextFormat = messageFormat;
+
+		messageField.selectable = false;
+
+		messageField.text = &quot;Press SPACE to start\nUse ARROW KEYS to move your platform&quot;;
+
+		
+
+		scorePlayer = 0;
+
+		scoreAI = 0;
+
+		setGameState(Paused);
+
+		
+
+		stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
+
+	}
+
+	
+
+	private function setGameState(state:GameState):Void {
+
+		currentGameState = state;
+
+		updateScore();
+
+		if (state == Paused) {
+
+			messageField.alpha = 1;
+
+		}else {
+
+			messageField.alpha = 0;
+
+		}
+
+	}
+
+	
+
+	private function keyDown(event:KeyboardEvent):Void {
+
+		if (currentGameState == Paused &amp;&amp; event.keyCode == 32) {
+
+			setGameState(Playing);
+
+		}
+
+	}
+
+	
+
+	private function updateScore():Void {
+
+		scoreField.text = scorePlayer + &quot;:&quot; + scoreAI;
+
+	}
+
+
+
+	/* SETUP */
+
+
+
+	public function new() 
+
+	{
+
+		super();	
+
+		addEventListener(Event.ADDED_TO_STAGE, added);
+
+	}
+
+
+
+	function added(e) 
+
+	{
+
+		removeEventListener(Event.ADDED_TO_STAGE, added);
+
+		stage.addEventListener(Event.RESIZE, resize);
+
+		#if ios
+
+		haxe.Timer.delay(init, 100); // iOS 6
+
+		#else
+
+		init();
+
+		#end
+
+	}
+
+	
+
+	public static function main() 
+
+	{
+
+		// static entry point
+
+		Lib.current.stage.align = openfl.display.StageAlign.TOP_LEFT;
+
+		Lib.current.stage.scaleMode = openfl.display.StageScaleMode.NO_SCALE;
+
+		Lib.current.addChild(new Main());
+
+		//
+
+	}
+
+}
+
+</code></pre>
+
+<p>If you test your project now, you'll see something like this:</p>
+
+<img src="img/22.png" class="center" alt="Haxe OpenFL Pong game">
+
+<p>Pressing the spacebar in your game will change the state from Paused to Playing. In the next part of the series, we will <a href="09_how_to_make_a_pong_game_in_haxe_and_openfl_part_3.html">add a game loop and player-controlled platform movement</a>.</p><footer>&copy; Kirill Poletaev</footer></body></html>
