@@ -20,14 +20,14 @@ stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
 <p>The shiftKey property will return true if the Shift key is pressed, false if it isn't.</p>
 <p>The ctrlKey property will indicate whether the Ctrl key is pressed on Windows or Linux, or whether the Ctrl or Command key is pressed on Mac OS. Otherwise it's false.</p>
 <p>Often you'll also want to detect when a key is being held down. The classic approach is to store the hold-down value for each key in a Bool variable, such as isKeyUpDown, and set this value to true on a KEY_DOWN event and to false on KEY_UP. However, this way you'll end up with a lot of variables, if statements and switch cases.</p>
-<p>Here's a simple trick to detect when any key is being held down using just 1 array variable.</p>
-<p>Declare an Array of Bool values:</p>
-<pre><code class="haxe">private var keys:Array<Bool>;</code></pre>
-<p>Set the array to an empty array in init() and add 2 keyboard listeners:</p>
-<pre><code class="haxe">keys = [];
+<p>Here's a simple trick to detect when any key is being held down using just 1 map variable.</p>
+<p>Declare a Map of type <Int, Bool>:</p>
+<pre><code class="haxe">private var keys:Map<Int, Bool>;</code></pre>
+<p>Initialise the map in init() and add 2 keyboard listeners:</p>
+<pre><code class="haxe">keys = new Map<Int, Bool>();
 stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);</code></pre>
-<p>In the event handlers change the value of the element in the array, which has the index of the same value as the keyCode being pressed:</p>
+<p>In the event handlers change the value of the element in the map, which has the index of the same value as the keyCode being pressed:</p>
 <pre><code class="haxe">private function onKeyDown(evt:KeyboardEvent):Void {
 	keys[evt.keyCode] = true;
 }
